@@ -1,0 +1,70 @@
+Line 1338: ['formatUSD'] | document.getElementById("dashTotalUsdReal").textContent = formatUSD(totalReal);
+Line 1339: ['formatUSD'] | document.getElementById("dashTotalUsdNominal").textContent = formatUSD(totalNom);
+Line 1340: ['formatVES'] | document.getElementById("dashTotalVes").textContent = formatVES(totalVes);
+Line 1341: ['formatEUR'] | document.getElementById("dashTotalEur").textContent = formatEUR(totalEur);
+Line 1355: ['formatUSD'] | document.getElementById("markerMetaLabel").textContent = "Meta: " + formatUSD(meta);
+Line 1357: ['formatUSD'] | document.getElementById("markerTechoLabel").textContent = "Techo: " + formatUSD(techo);
+Line 1368: ['formatUSD'] | diffNotice.textContent = `Ahorro vs Meta Ideal: ${formatUSD(saving)}`;
+Line 1376: ['formatUSD'] | diffNotice.textContent = `+$${overMeta.toFixed(2)} sobre la meta | Aún te sobran ${formatUSD(underTe
+Line 1384: ['formatUSD'] | diffNotice.textContent = `⚠️ Excedido por ${formatUSD(overTecho)} (+${overPct}% sobre el techo máxim
+Line 1391: ['formatUSD'] | document.getElementById("kpi1Val").textContent = formatUSD(perGuestReal);
+Line 1392: ['formatVES'] | document.getElementById("kpi1Sub").textContent = `Equivalente a ${formatVES(perGuestVes)} por person
+Line 1395: ['formatUSD'] | document.getElementById("kpi2Val").textContent = formatUSD(marginalGuestReal);
+Line 1398: ['formatUSD'] | document.getElementById("kpi3Val").textContent = formatUSD(cashUsd);
+Line 1399: ['formatUSD', 'formatUSD', 'formatVES'] | document.getElementById("kpi3Sub").textContent = `Billetes: ${formatUSD(cashUsd)} | USDT: ${formatUS
+Line 1403: ['formatUSD'] | document.getElementById("kpi4Val").textContent = formatUSD(ahorroBrecha);
+Line 1441: ['formatUSD', 'formatUSD'] | Para entrar dentro de tu Techo Máximo de <strong>${formatUSD(techo)}</strong> sin cambiar ningún pro
+Line 1483: ['formatUSD'] | Si cambias a <strong>${escapeHtml(currentItem.Nombre_Proveedor)}</strong> por <strong>${escapeHtml(a
+Line 2781: ['formatUSD'] | <div style="font-size:15px; font-weight:800; color:#1D1D1F;">${formatUSD(costs.cReal)}</div>
+Line 2782: ['formatVES'] | <div style="font-size:11px; color:var(--text-secondary);">${formatVES(costs.cVes)}</div>
+Line 2913: ['formatUSD'] | const priceText = `${formatUSD(parseFloat(item.Precio_Unitario_Cotizado) || 0)}`;
+Line 3070: ['formatUSD'] | ${formatUSD(costs.cReal)}
+Line 3073: ['formatVES'] | Equivalente: ${formatVES(costs.cVes)}
+Line 3078: ['formatNumber'] | <div><strong>Cotización Nominal:</strong> ${formatNumber(item.Precio_Unitario_Cotizado)} ${escapeHtm
+Line 3118: ['formatUSD'] | La opción más económica es <strong>"${escapeHtml(best.item.Producto_Comparable || best.item.Categori
+Line 3120: ['formatUSD', 'formatUSD'] | Representa un ahorro directo de <strong>${formatUSD(diff1)} (${diffPct1}%)</strong> en comparación c
+Line 3129: ['formatUSD', 'formatUSD'] | Frente a la opción más costosa ("${escapeHtml(third.provName)}" en ${formatUSD(third.costs.cReal)}),
+Line 3224: ['formatUSD'] | ${formatUSD(totReal)}
+Line 3227: ['formatVES'] | ${formatVES(totVes)}
+Line 3300: ['formatUSD'] | <td style="padding:7px 10px; text-align:right; font-weight:700;">${formatUSD(c.cReal)}</td>
+Line 3301: ['formatVES'] | <td style="padding:7px 10px; text-align:right; color:var(--text-secondary);">${formatVES(c.cVes)}</t
+Line 3523: ['formatUSD'] | ${formatUSD(c.cReal)}
+Line 3526: ['formatVES'] | ${formatVES(c.cVes)}
+Line 3546: ['formatUSD'] | if (elReal) elReal.textContent = formatUSD(totReal);
+Line 3547: ['formatVES'] | if (elVes) elVes.textContent = formatVES(totVes);
+Line 3548: ['formatUSD'] | if (elNom) elNom.textContent = formatUSD(totNom);
+Line 3549: ['formatUSD'] | if (elAhorro) elAhorro.textContent = formatUSD(ahorro);
+Line 3809: ['formatNumber'] | { label: "Precio Cotizado", val: `${formatNumber(item.Precio_Unitario_Cotizado || 0)} ${item.Moneda_
+Line 3811: ['formatUSD'] | { label: "Costo Real USD", val: formatUSD(costs.cReal) },
+Line 3812: ['formatUSD'] | { label: "Costo Nominal USD", val: formatUSD(costs.cNom) },
+Line 3813: ['formatVES'] | { label: "Costo Estimado VES", val: formatVES(costs.cVes) }
+Line 4043: ['formatUSD'] | bannerTitle = `El Presupuesto B (${escapeHtml(mB.name)}) es +${formatUSD(absDiffUSD)} (+${pct}%) MÁS
+Line 4044: ['formatVES'] | bannerSub = `Representa una diferencia de ${formatVES(absDiffVES)} adicionales en bolívares.`;
+Line 4048: ['formatUSD'] | bannerTitle = `El Presupuesto B (${escapeHtml(mB.name)}) es -${formatUSD(absDiffUSD)} (-${pct}%) MÁS
+Line 4049: ['formatVES'] | bannerSub = `¡Ahorro directo de bolsillo! Te ahorras ${formatVES(absDiffVES)} en bolívares con la Op
+Line 4053: ['formatUSD'] | bannerTitle = `Ambos presupuestos tienen exactamente el mismo costo real de bolsillo: ${formatUSD(mA
+Line 4069: ['formatUSD'] | <div style="font-size:22px; font-weight:800;">${diffUSD >= 0 ? "+" : "-"}${formatUSD(absDiffUSD)}</d
+Line 4078: ['formatUSD'] | <div><strong style="color:#1D1D1F;">${formatUSD(mA.totReal)}</strong> <span style="font-size:10px; c
+Line 4079: ['formatUSD'] | <div style="font-weight:700; color:${diffUSD > 0 ? '#E65100' : '#1B8738'};">${formatUSD(mB.totReal)}
+Line 4085: ['formatUSD'] | <div><strong>${formatUSD(guests > 0 ? mA.totReal / guests : 0)}</strong></div>
+Line 4086: ['formatUSD'] | <div><strong>${formatUSD(guests > 0 ? mB.totReal / guests : 0)}</strong></div>
+Line 4092: ['formatUSD'] | <div><strong style="color:#F57F17;">${formatUSD(mA.cashUsd)}</strong></div>
+Line 4093: ['formatUSD'] | <div><strong style="color:#F57F17;">${formatUSD(mB.cashUsd)}</strong></div>
+Line 4099: ['formatUSD'] | <div><strong style="color:#1B8738;">${formatUSD(mA.ahorroBrecha)}</strong></div>
+Line 4100: ['formatUSD'] | <div><strong style="color:#1B8738;">${formatUSD(mB.ahorroBrecha)}</strong></div>
+Line 4143: ['formatUSD'] | <div style="font-size:26px; font-weight:800; color:#1D1D1F; margin:4px 0;">${formatUSD(m.totReal)}</
+Line 4144: ['formatVES', 'formatEUR'] | <div style="font-size:12px; color:var(--text-secondary); font-weight:600;">${formatVES(m.totVes)} | 
+Line 4164: ['formatUSD'] | <div style="font-size:15px; font-weight:700;">${formatUSD(guests > 0 ? m.totReal / guests : 0)}</div
+Line 4168: ['formatUSD'] | <div style="font-size:15px; font-weight:700;">${formatUSD(m.marginal)}</div>
+Line 4172: ['formatUSD'] | <div style="font-size:15px; font-weight:700; color:#F57F17;">${formatUSD(m.cashUsd)}</div>
+Line 4176: ['formatUSD'] | <div style="font-size:15px; font-weight:700; color:#1B8738;">${formatUSD(m.ahorroBrecha)}</div>
+Line 4215: ['formatUSD'] | <div style="text-align:right; font-size:12px; font-weight:700; flex-shrink:0;">${formatUSD(c.cReal)}
+Line 4262: ['formatUSD'] | <td style="padding:10px 12px; font-size:13px; text-align:right; font-weight:bold;">${formatUSD(c.cRe
+Line 4263: ['formatVES'] | <td style="padding:10px 12px; font-size:13px; text-align:right;">${formatVES(c.cVes)}</td>
+Line 4300: ['formatUSD'] | <div style="font-size:26px; font-weight:800; color:#1D1D1F;">${formatUSD(totReal)}</div>
+Line 4304: ['formatVES'] | <div style="font-size:22px; font-weight:700; color:#333;">${formatVES(totVes)}</div>
+Line 4308: ['formatUSD'] | <div style="font-size:22px; font-weight:700; color:#333;">${formatUSD(guests > 0 ? totReal / guests 
+Line 4385: ['format'] | jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+Line 4916: ['formatUSD'] | function formatUSD(num) {
+Line 4920: ['formatVES'] | function formatVES(num) {
+Line 4924: ['formatEUR'] | function formatEUR(num) {

@@ -1,0 +1,18 @@
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+
+/*.html
+  Content-Type: text/html; charset=UTF-8
+
+/*.js
+  Content-Type: application/javascript; charset=UTF-8
+
+/*.css
+  Content-Type: text/css; charset=UTF-8
+
+/*.json
+  Content-Type: application/json; charset=UTF-8
+
+/*.pdf
+  Content-Type: application/pdf

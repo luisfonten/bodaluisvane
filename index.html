@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Boda Luis & Vane">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#FFFFFF">
+  <title>La Boda de Luis y Vane - Versión Web Celular</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Librería para Exportación a PDF Client-Side Directa en el Navegador -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    // Inicialización inmediata y garantizada para apertura del modal de configuración
+    window.openConfigModal = function(focusCloud) {
+      var drawer = document.getElementById("configDrawer");
+      var btnToggle = document.getElementById("btnToggleConfig");
+      var arrow = document.getElementById("configToggleArrow");
+      if (!drawer) return;
+      drawer.classList.add("open");
+      drawer.classList.add("active");
+      drawer.style.setProperty("display", "flex", "important");
+      drawer.style.setProperty("opacity", "1", "important");
+      drawer.style.setProperty("pointer-events", "auto", "important");
+      if (btnToggle) btnToggle.classList.add("active");
+      if (arrow) arrow.textContent = "▲";
+
+      if (focusCloud !== false) {
+        var inputUrl = document.getElementById("inputGoogleSheetsUrl");
+        if (inputUrl) {
+          setTimeout(function() {
+            inputUrl.focus();
+            try { inputUrl.select(); } catch(e) {}
+          }, 100);
+        }
+      }
+    };
+
+    window.closeConfigModal = function() {
+      var drawer = document.getElementById("configDrawer");
+      var btnToggle = document.getElementById("btnToggleConfig");
+      var arrow = document.getElementById("configToggleArrow");
+      if (!drawer) return;
+      drawer.classList.remove("open");
+      drawer.classList.remove("active");
+      drawer.style.setProperty("display", "none", "important");
+      drawer.style.setProperty("opacity", "0", "important");
+      drawer.style.setProperty("pointer-events", "none", "important");
+      if (btnToggle) btnToggle.classList.remove("active");
+      if (arrow) arrow.textContent = "▾";
+    };
+
+    var _lastModalToggleTime = 0;
+    window.toggleConfigModal = function(e) {
+      if (e && e.stopPropagation) e.stopPropagation();
+      var now = Date.now();
+      if (now - _lastModalToggleTime < 250) return;
+      _lastModalToggleTime = now;
+
+      var drawer = document.getElementById("configDrawer");
+      if (!drawer) return;
+      var isOpen = drawer.classList.contains("open") || drawer.classList.contains("active") || (drawer.style.display && drawer.style.display !== "none");
+      if (isOpen) {
+        window.closeConfigModal();
+      } else {
+        window.openConfigModal(false);
+      }
+    };
+  </script>
+</head>
+<body>
+
+  <!-- Cabecera Superior Ultracompacta (Máximo 65px de alto) -->
+  <header class="app-header-compact">
+    <!-- Izquierda: Marca -->
+    <div class="brand-compact">
+      <span class="brand-icon-compact">💍</span>
+      <span class="brand-title-compact">La Boda de Luis y Vane</span>
+    </div>
+
+    <!-- Centro: Pestañas de Navegación Segmentada Siempre Visibles -->
+    <nav class="nav-compact">
+      <div class="nav-segmented">
+        <button class="nav-item active" data-tab="tab-dashboard">
+          <span>📊</span> Dashboard
+        </button>
+        <button class="nav-item" data-tab="tab-invitados">
+          <span>👥</span> Invitados
+        </button>
+        <button class="nav-item" data-tab="tab-logistica">
+          <span>📋</span> Logística
+        </button>
+        <button class="nav-item" data-tab="tab-proveedores">
+          <span>🏷️</span> Proveedores & Productos
+        </button>
+        <button class="nav-item" data-tab="tab-comparador">
+          <span>⚖️</span> Comparador de productos
+        </button>
+        <button class="nav-item" data-tab="tab-escenarios">
+          <span>📁</span> Presupuestos
+        </button>
+      </div>
+    </nav>
+
+    <!-- Derecha: Píldoras de Resumen Rápido + Countdown + Botón Desplegable -->
+    <div class="header-right-compact">
+      <div class="summary-pill cloud-pill" id="cloudStatusBadge" title="Estado de sincronización en la nube (Google Sheets) - Clic para configurar" onclick="window.openConfigModal && window.openConfigModal(true)" style="cursor: pointer;">
+        <span id="cloudStatusIcon">⚪</span> <span id="cloudStatusText">Local</span>
+      </div>
+      <button class="btn btn-secondary mini-btn-icon" id="btnSyncCloudHeader" type="button" title="Forzar sincronización inmediata con Google Sheets" onclick="window.handleHeaderSyncClick && window.handleHeaderSyncClick(event)">
+        🔄
+      </button>
+      <div class="summary-pill" title="Invitados estimados para los cálculos" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>👥</span> <span id="summaryGuests">100 Inv.</span>
+      </div>
+      <div class="summary-pill" title="Rango de Presupuesto (Meta Ideal - Techo Máx)" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>🎯</span> <span id="summaryBudget">$2,500 - $3,200</span>
+      </div>
+      <div class="summary-pill" title="Tasa oficial Dólar BCV del día" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>💵</span> <span id="summaryBcv">Dólar BCV: 45.50 Bs</span>
+      </div>
+      <div class="summary-pill" title="Tasa oficial Euro BCV del día" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>💶</span> <span id="summaryEurBcv">Euro BCV: 49.80 Bs</span>
+      </div>
+      <div class="summary-pill countdown-pill" id="countdownBadge" title="Días restantes para la boda - Clic para configurar" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>⏳</span> Faltan <span id="countdownDays" class="countdown-days">--</span> d
+      </div>
+      <div class="summary-pill countdown-pill decision-countdown-pill" id="decisionCountdownBadge" title="Fecha límite para evaluar la viabilidad financiera del proyecto - Clic para configurar" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>⚖️</span> <span id="decisionCountdownText">Fecha de Decisión: <strong id="decisionCountdownDays" class="countdown-days">--</strong> d</span>
+      </div>
+      <button class="btn-manual-toggle" id="btnOpenManual" type="button" title="Abrir Manual de Uso Oficial en PDF" onclick="openManual()">
+        <span>📖 Manual de Uso</span>
+      </button>
+      <button class="btn-config-toggle" id="btnToggleConfig" type="button" title="Configurar Tasas, Invitados y Presupuesto Meta" onclick="window.toggleConfigModal && window.toggleConfigModal(event)">
+        <span>⚙️ Configurar Tasas y Meta</span> <span id="configToggleArrow">▾</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Modal Centrado de Configuración y Sincronización en la Nube (z-index: 999999) -->
+  <div class="config-drawer" id="configDrawer" style="position:fixed; inset:0; z-index:999999; display:none;" onclick="if(event.target === this) closeConfigModal()">
+    <div class="config-drawer-inner" onclick="event.stopPropagation()">
+      <!-- Cabecera del Modal -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ECECF0; padding-bottom: 14px; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: #FFF0F5; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">⚙️</div>
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #1D1D1F; letter-spacing: -0.3px;">Configuración del Sistema & Conexión Nube</h3>
+            <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #86868B;">Sincronización multiusuario con Google Sheets, tasas cambiarias y presupuesto</p>
+          </div>
+        </div>
+        <button type="button" id="btnCloseConfigModalX" onclick="closeConfigModal()" style="background: #F2F2F7; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #3A3A3C; transition: all 0.2s;" title="Cerrar ventana">&times;</button>
+      </div>
+
+      <!-- Tarjeta 1: Sincronización en la Nube con Google Sheets (Prioridad Alta) -->
+      <div class="cloud-config-section" style="background: #F9FAFB; border: 1.5px solid #E5E7EB; border-radius: 14px; padding: 16px; margin-bottom: 18px; margin-top: 0;">
+        <div class="cloud-config-header" style="margin-bottom: 12px;">
+          <div class="cloud-title-group">
+            <span class="cloud-icon-title" style="font-size: 20px;">☁️</span>
+            <div>
+              <span class="cloud-title" style="font-size: 13.5px; font-weight: 700;">Conexión en Tiempo Real con Google Sheets</span>
+              <div class="cloud-subtitle" style="font-size: 11.5px; margin-left: 0; margin-top: 2px;">Pega el enlace de la Web App (/exec) para que Luis, Vane y el equipo sincronicen datos</div>
+            </div>
+          </div>
+          <div id="cloudConnectionStateText" class="cloud-badge-state" style="padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;">
+            Modo Local Autónomo
+          </div>
+        </div>
+
+        <div class="cloud-fields-row" style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="cloud-field-item">
+            <label class="mini-label" for="inputGoogleSheetsUrl" style="font-size: 11px; margin-bottom: 4px; display: block;">URL de la Web App de Google Apps Script (/exec) <span style="color: #E11D48;">*</span></label>
+            <input type="url" id="inputGoogleSheetsUrl" class="mini-input" style="padding: 9px 12px; font-size: 13px; border-radius: 10px; border: 1.5px solid #D1D5DB; background: #FFFFFF;" placeholder="https://script.google.com/macros/s/.../exec" />
+          </div>
+          <div class="cloud-field-item">
+            <label class="mini-label" for="inputGoogleSheetsViewUrl" style="font-size: 11px; margin-bottom: 4px; display: block;">Link para Ver la Hoja en Google Drive (Opcional)</label>
+            <input type="url" id="inputGoogleSheetsViewUrl" class="mini-input" style="padding: 8px 12px; font-size: 12.5px; border-radius: 10px; border: 1px solid #D1D5DB; background: #FFFFFF;" placeholder="https://docs.google.com/spreadsheets/d/.../edit" />
+          </div>
+          <div class="cloud-field-actions" style="display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap;">
+            <button class="btn btn-primary mini-btn" id="btnConnectCloud" type="button" onclick="connectAndSyncCloud()" style="padding: 9px 18px; font-size: 12.5px; font-weight: 700; border-radius: 10px; height: auto;">
+              <span>☁️</span> Conectar y Sincronizar Nube
+            </button>
+            <a href="#" target="_blank" id="btnOpenGoogleSheet" class="btn btn-secondary mini-btn" style="display: none; padding: 9px 14px; font-size: 12px; border-radius: 10px; height: auto; align-items: center; gap: 5px;">
+              <span>↗️</span> Abrir Hoja en Drive
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2: Parámetros Financieros, Fechas y Tasas BCV -->
+      <div style="background: #FFFFFF; border: 1px solid #ECECF0; border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 700; color: #1D1D1F;">📊 Parámetros del Evento & Tasas Cambiarias</span>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-blue mini-btn" id="btnSyncBcv" type="button" title="Consultar tasas oficiales BCV en línea" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;">
+              <span>🌐</span> Sincronizar BCV
+            </button>
+            <button class="btn btn-secondary mini-btn" id="btnReloadExcel" type="button" title="Recargar datos actualizados desde Google Sheets" style="padding: 6px 10px; font-size: 11px; border-radius: 8px;">
+              <span>🔄</span> Recargar Datos
+            </button>
+          </div>
+        </div>
+
+        <div class="config-grid">
+          <!-- Fecha Boda -->
+          <div class="mini-control">
+            <label class="mini-label" for="weddingDateInput">Fecha Boda</label>
+            <input type="date" id="weddingDateInput" class="mini-input" />
+          </div>
+
+          <!-- Fecha de Decisión -->
+          <div class="mini-control">
+            <label class="mini-label" for="decisionDateInput" title="Fecha límite para evaluar viabilidad financiera">Fecha de Decisión</label>
+            <input type="date" id="decisionDateInput" class="mini-input" title="Fecha límite para decidir la viabilidad financiera del proyecto" />
+          </div>
+
+          <!-- Invitados -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputGuests">Invitados</label>
+            <div class="mini-stepper-row">
+              <button type="button" class="mini-step-btn" onclick="adjustGuests(-5)">-</button>
+              <input type="number" id="inputGuests" class="mini-input mini-input-num" min="1" max="1000" />
+              <button type="button" class="mini-step-btn" onclick="adjustGuests(5)">+</button>
+            </div>
+          </div>
+
+          <!-- Presupuesto Meta -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputBudgetMeta">Meta Ideal ($)</label>
+            <input type="number" id="inputBudgetMeta" class="mini-input" />
+          </div>
+
+          <!-- Presupuesto Techo -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputBudgetTecho">Techo Máx ($)</label>
+            <input type="number" id="inputBudgetTecho" class="mini-input" />
+          </div>
+
+          <!-- Tasa Dólar BCV -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputRateUsdBcv">Dólar BCV (Bs)</label>
+            <input type="number" step="0.01" id="inputRateUsdBcv" class="mini-input" />
+          </div>
+
+          <!-- Tasa Euro BCV -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputRateEurBcv">Euro BCV (Bs)</label>
+            <input type="number" step="0.01" id="inputRateEurBcv" class="mini-input" />
+          </div>
+
+          <!-- Tasa Efectivo / USDT -->
+          <div class="mini-control">
+            <label class="mini-label" for="inputRateUsdt">Efectivo / USDT (Bs)</label>
+            <input type="number" step="0.01" id="inputRateUsdt" class="mini-input" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 10px; border-top: 1px solid #ECECF0;">
+        <button class="btn btn-secondary mini-btn btn-close-drawer" id="btnCloseDrawer" type="button" onclick="closeConfigModal()" style="padding: 8px 18px; font-size: 12.5px; border-radius: 10px; height: auto;">
+          ✕ Cerrar Ventana
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal -->
+  <main class="main-container">
+
+    <!-- PESTAÑA 1: DASHBOARD DE VIABILIDAD & KPIS -->
+    <section id="tab-dashboard" class="tab-content active">
+      
+      <!-- Selector de Presupuesto Activo para el Dashboard -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">Presupuesto en Análisis:</span>
+          <select id="selectActiveScenario" class="filter-select" style="min-width:240px; font-weight:700;">
+            <!-- Opciones cargadas dinámicamente -->
+          </select>
+        </div>
+        
+        <div style="display:flex; align-items:center; gap:12px;">
+          <label style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:600; background:#FFF; padding:6px 14px; border-radius:12px; border:1px solid rgba(0,0,0,0.08);">
+            <input type="checkbox" id="chkColchonImprevistos" style="accent-color:var(--pink-primary); width:16px; height:16px;" />
+            <span>🛡️ +15% Colchón de Imprevistos</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 1. Semáforo de Rango Presupuestario -->
+      <div class="semaforo-container">
+        <div class="semaforo-status-box">
+          <div>
+            <div id="semaforoBadge" class="semaforo-badge verde">
+              <span id="semaforoDot">●</span>
+              <span id="semaforoText">Dentro del Presupuesto Meta</span>
+            </div>
+            <div style="margin-top:8px;">
+              <span style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Costo Real de Bolsillo</span>
+              <div id="dashTotalUsdReal" class="semaforo-main-total">$0.00</div>
+            </div>
+          </div>
+          <div class="semaforo-sub-totals">
+            <div>Dólar Nominal: <strong id="dashTotalUsdNominal">$0.00</strong></div>
+            <div>Bolívares (VES): <strong id="dashTotalVes">Bs 0.00</strong></div>
+            <div>Equivalente EUR BCV: <strong id="dashTotalEur">€0.00</strong></div>
+            <div id="dashDifferenceNotice" style="margin-top:6px; font-size:13px; font-weight:700; color:#1B8738;">
+              Ahorro vs Meta: $0.00
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-track-wrapper">
+          <div class="progress-track">
+            <div id="progressFill" class="progress-fill verde" style="width: 40%;"></div>
+          </div>
+          <!-- Marcador Meta -->
+          <div class="target-marker" id="markerMeta" style="left: 78%;">
+            <div class="marker-line"></div>
+            <div class="marker-label" id="markerMetaLabel">Meta: $2,500</div>
+          </div>
+          <!-- Marcador Techo -->
+          <div class="ceiling-marker" id="markerTecho" style="left: 100%;">
+            <div class="marker-line" style="background:var(--color-red);"></div>
+            <div class="marker-label" id="markerTechoLabel" style="color:var(--color-red);">Techo: $3,200</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Las 5 Tarjetas de KPIs Financieros -->
+      <div class="kpis-grid">
+        <!-- KPI 1 -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Costo por Invitado</span>
+            <span class="kpi-icon" style="background:#FCE4EC; color:var(--pink-primary);">👥</span>
+          </div>
+          <div class="kpi-val" id="kpi1Val">$0.00</div>
+          <div class="kpi-desc" id="kpi1Sub">Equivalente a Bs 0.00 por persona</div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">1 Silla Más (Marginal)</span>
+            <span class="kpi-icon" style="background:#E1F5FE; color:var(--blue-primary);">🪑</span>
+          </div>
+          <div class="kpi-val" id="kpi2Val">$0.00</div>
+          <div class="kpi-desc">Costo de agregar o quitar 1 invitado extra</div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Arqueo de Caja</span>
+            <span class="kpi-icon" style="background:#FFF8E1; color:#F57F17;">💵</span>
+          </div>
+          <div class="kpi-val" id="kpi3Val">$0.00</div>
+          <div class="kpi-desc" id="kpi3Sub">Efectivo: $0 | USDT: $0 | Bs BCV: Bs 0</div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Ahorro Brecha Dólar/Euro BCV</span>
+            <span class="kpi-icon" style="background:#E8F8EE; color:#1B8738;">📉</span>
+          </div>
+          <div class="kpi-val" id="kpi4Val" style="color:#1B8738;">$0.00</div>
+          <div class="kpi-desc" id="kpi4Sub">Dólares de bolsillo ahorrados pagando a tasa oficial BCV</div>
+        </div>
+
+        <!-- KPI 5 -->
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Salón + Comida</span>
+            <span class="kpi-icon" id="kpi5Icon" style="background:#EDE7F6; color:#512DA8;">🍽️</span>
+          </div>
+          <div class="kpi-val" id="kpi5Val">0%</div>
+          <div class="kpi-desc" id="kpi5Sub">Rubros más pesados de la boda (Meta: &lt;65%)</div>
+        </div>
+      </div>
+
+      <!-- 3. Panel de Proyecciones y Sugerencias de Optimización Matemática -->
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">
+            <span>✨</span> Inteligencia Financiera & Sugerencias de Optimización Local
+          </div>
+          <button class="btn btn-primary" id="btnAutoMinBudget">
+            <span>⚡</span> Armar Presupuesto Mínimo Viable Automático
+          </button>
+        </div>
+
+        <div class="suggestions-grid" id="suggestionsContainer">
+          <!-- Tarjetas generadas dinámicamente -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- PESTAÑA 2: LISTA DE INVITADOS & ASISTENCIA -->
+    <section id="tab-invitados" class="tab-content">
+      <!-- Mini KPIs de Invitados -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px;">
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Total Asistentes</span>
+          <span class="mini-kpi-val" id="kpiGuestsTotal">0</span>
+          <span style="font-size:11px; color:var(--text-secondary);" id="kpiGuestsDetail">0 titulares + 0 +1</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Confirmados</span>
+          <span class="mini-kpi-val" style="color:#1B8738;" id="kpiGuestsConfirmed">0</span>
+          <span style="font-size:11px; color:#1B8738;">Asistencia confirmada</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Pendientes</span>
+          <span class="mini-kpi-val" style="color:#B78103;" id="kpiGuestsPending">0</span>
+          <span style="font-size:11px; color:#B78103;">Por confirmar</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Declinados</span>
+          <span class="mini-kpi-val" style="color:#D81B60;" id="kpiGuestsDeclined">0</span>
+          <span style="font-size:11px; color:#D81B60;">No asistirán</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Menú Especial / Alergias</span>
+          <span class="mini-kpi-val" style="color:#0288D1;" id="kpiGuestsDiet">0</span>
+          <span style="font-size:11px; color:#0288D1;">Para el Catering</span>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros y Acciones de Invitados -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="filters-bar" style="margin-bottom:0;">
+          <input type="text" id="searchGuests" class="search-input" placeholder="🔍 Buscar invitado por nombre, teléfono, rol o restricción..." />
+          
+          <select id="filterGuestStatus" class="filter-select">
+            <option value="">Todos los Estados</option>
+            <option value="Confirmado">Solo Confirmados</option>
+            <option value="Pendiente">Solo Pendientes</option>
+            <option value="Declinado">Solo Declinados</option>
+          </select>
+
+          <select id="filterGuestRole" class="filter-select">
+            <option value="">Todos los Roles / Grupos</option>
+            <option value="Familia Novio">Familia Novio</option>
+            <option value="Familia Novia">Familia Novia</option>
+            <option value="Amigos">Amigos</option>
+            <option value="Padrinos / Madrinas">Padrinos / Madrinas</option>
+            <option value="Cortejo">Cortejo de Boda</option>
+            <option value="Otros">Otros</option>
+          </select>
+
+          <select id="filterGuestTable" class="filter-select" onchange="renderGuestsTab()">
+            <option value="">Todas las Mesas</option>
+            <option value="__none__">Sin Mesa Asignada</option>
+            <option value="Mesa Principal / Novios">👑 Mesa Principal / Novios</option>
+          </select>
+
+          <button class="btn btn-secondary" id="btnToggleGroupTables" onclick="toggleGuestGroupTables()" title="Alternar entre lista regular y agrupación visual por mesas">
+            <span>🪑</span> Agrupar por Mesas
+          </button>
+
+          <button class="btn btn-secondary" onclick="fetchGuestsFromGAS(); showToast('Actualizando lista de invitados desde la nube...', 'info');" title="Recargar lista de invitados directamente desde Google Sheets">
+            <span>🔄</span> Recargar Nube
+          </button>
+
+          <button class="btn btn-secondary" id="btnSyncGuestsToConfig" onclick="syncGuestsCountToConfig()" title="Actualiza el número de invitados base del presupuesto según esta lista">
+            <span>👥</span> Sincronizar con Presupuesto
+          </button>
+
+          <button class="btn btn-primary" onclick="openNewGuestModal()">
+            <span>➕</span> Nuevo Invitado
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla Regular de Invitados -->
+      <div class="card" id="guestsTableContainer">
+        <div style="overflow-x:auto;">
+          <table class="table" id="tableGuests" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:#F9F9FB; border-bottom:1px solid rgba(0,0,0,0.08);">
+                <th style="padding:12px 14px; text-align:left;">Nombre y Apellido</th>
+                <th style="padding:12px 14px; text-align:left;">Rol / Grupo</th>
+                <th style="padding:12px 14px; text-align:left;">Contacto / WhatsApp</th>
+                <th style="padding:12px 14px; text-align:center;">Estado</th>
+                <th style="padding:12px 14px; text-align:center;">Acompañantes</th>
+                <th style="padding:12px 14px; text-align:left;">Restricciones Alimentarias</th>
+                <th style="padding:12px 14px; text-align:left;">Mesa (Edición Directa)</th>
+                <th style="padding:12px 14px; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyGuests">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Contenedor de Vista Agrupada Inteligente por Mesas -->
+      <div id="guestsTableGroupsContainer" style="display:none;">
+        <!-- Se renderizan tarjetas por cada mesa -->
+      </div>
+    </section>
+
+    <!-- PESTAÑA 3: LOGÍSTICA & TAREAS (ESTILO ASANA) -->
+    <section id="tab-logistica" class="tab-content">
+      <!-- Mini KPIs de Logística -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px;">
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Total Tareas</span>
+          <span class="mini-kpi-val" id="kpiTasksTotal">0</span>
+          <span style="font-size:11px; color:var(--text-secondary);">Plan de boda</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Completadas</span>
+          <span class="mini-kpi-val" style="color:#1B8738;" id="kpiTasksCompleted">0</span>
+          <span style="font-size:11px; color:#1B8738;">Listas y verificadas</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">En Progreso</span>
+          <span class="mini-kpi-val" style="color:#0288D1;" id="kpiTasksInProgress">0</span>
+          <span style="font-size:11px; color:#0288D1;">En gestión activa</span>
+        </div>
+        <div class="mini-kpi-card">
+          <span class="mini-kpi-lbl">Pendientes</span>
+          <span class="mini-kpi-val" style="color:#FF9500;" id="kpiTasksPending">0</span>
+          <span style="font-size:11px; color:#FF9500;">Por iniciar</span>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros y Acciones de Tareas -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="filters-bar" style="margin-bottom:0;">
+          <input type="text" id="searchTasks" class="search-input" placeholder="🔍 Buscar tarea por título, responsable, categoría..." />
+          
+          <select id="filterTaskStatus" class="filter-select">
+            <option value="">Todos los Estados</option>
+            <option value="Pendiente">Pendientes</option>
+            <option value="En Progreso">En Progreso</option>
+            <option value="Completada">Completadas</option>
+          </select>
+
+          <select id="filterTaskAssignee" class="filter-select">
+            <option value="">Todos los Responsables</option>
+            <option value="Luis">Luis</option>
+            <option value="Vane">Vane</option>
+            <option value="Ambos">Ambos (Luis y Vane)</option>
+            <option value="Madrina / Padrino">Madrina / Padrino</option>
+            <option value="Wedding Planner">Wedding Planner</option>
+            <option value="Otros">Otros</option>
+          </select>
+
+          <select id="filterTaskCategory" class="filter-select">
+            <option value="">Todas las Categorías</option>
+            <option value="Trámites Legales">Trámites Legales</option>
+            <option value="Ceremonia">Ceremonia</option>
+            <option value="Recepción / Fiesta">Recepción / Fiesta</option>
+            <option value="Vestimenta y Belleza">Vestimenta y Belleza</option>
+            <option value="Proveedores y Pagos">Proveedores y Pagos</option>
+            <option value="Protocolo y Cortejo">Protocolo y Cortejo</option>
+            <option value="General">General</option>
+          </select>
+
+          <button class="btn btn-primary" onclick="openNewTaskModal()">
+            <span>➕</span> Nueva Tarea
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista / Tabla de Tareas Estilo Asana -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px; padding:2px 0;">
+          <h3 style="font-size:16px; font-weight:700; margin:0; color:#1D1D1F;">Tareas y Planificación</h3>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSortTasksAlpha" onclick="sortTasks('alpha')" title="Ordenar alfabéticamente por título de tarea" style="font-size:12px; padding:6px 12px; border-radius:8px;">
+              <span>🔤</span> Ordenar Alfabéticamente
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSortTasksDate" onclick="sortTasks('date')" title="Ordenar cronológicamente por fecha límite" style="font-size:12px; padding:6px 12px; border-radius:8px;">
+              <span>📅</span> Ordenar por Fecha
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="table" id="tableTasks" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="background:#F9F9FB; border-bottom:1px solid rgba(0,0,0,0.08);">
+                <th style="padding:12px 14px; text-align:center; width:45px;">Listo</th>
+                <th style="padding:12px 14px; text-align:left;">Tarea & Descripción</th>
+                <th style="padding:12px 14px; text-align:left;">Categoría</th>
+                <th style="padding:12px 14px; text-align:left;">Responsable</th>
+                <th style="padding:12px 14px; text-align:left;">Fecha Límite</th>
+                <th style="padding:12px 14px; text-align:center;">Prioridad</th>
+                <th style="padding:12px 14px; text-align:center;">Estado</th>
+                <th style="padding:12px 14px; text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyTasks">
+              <!-- Filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 4: DIRECTORIO DE PROVEEDORES & CATÁLOGO (ESTRUCTURA DE DOS NIVELES) -->
+    <section id="tab-proveedores" class="tab-content">
+      
+      <!-- NIVEL 1: VISTA GENERAL DE PROVEEDORES -->
+      <div id="viewProvidersList">
+        <div class="filters-bar">
+          <input type="text" id="searchProviders" class="search-input" placeholder="🔍 Buscar proveedor por nombre, rubro o ubicación..." />
+          
+          <select id="filterRubro" class="filter-select">
+            <option value="">Todos los Rubros / Categorías</option>
+          </select>
+
+          <button class="btn btn-primary" onclick="openNewProviderModal()">
+            <span>➕</span> Nuevo Proveedor
+          </button>
+        </div>
+
+        <div class="providers-grid" id="providersGrid">
+          <!-- Tarjetas limpias de proveedores cargadas aquí -->
+        </div>
+      </div>
+
+      <!-- NIVEL 2: VISTA INTERNA DEL PROVEEDOR (TABLA DE PRODUCTOS) -->
+      <div id="viewProviderDetail" style="display:none;">
+        <div style="margin-bottom:16px;">
+          <button class="btn btn-secondary" onclick="backToProvidersList()">
+            <span>←</span> Volver a Proveedores
+          </button>
+        </div>
+
+        <!-- Encabezado Detallado del Proveedor -->
+        <div class="card" id="providerDetailHeaderCard" style="margin-bottom:20px;">
+          <!-- Contenido renderizado dinámicamente -->
+        </div>
+
+        <!-- Tabla de Productos del Proveedor -->
+        <div class="card">
+          <div class="card-title-row" style="margin-bottom:12px;">
+            <div class="card-title">
+              <span>📦</span> Catálogo de Productos y Servicios de este Proveedor
+            </div>
+            <button class="btn btn-primary" onclick="openNewItemForCurrentProvider()">
+              <span>➕</span> Agregar Producto a este Proveedor
+            </button>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
+            Todos los productos registrados para este proveedor. Puedes crear nuevos productos, editarlos o eliminarlos directamente aquí.
+          </p>
+
+          <div style="overflow-x:auto; border:1px solid rgba(0,0,0,0.08); border-radius:14px;">
+            <table class="provider-detail-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+              <thead style="background:#FAFAFC; border-bottom:1px solid rgba(0,0,0,0.08);">
+                <tr>
+                  <th style="padding:12px 14px; text-align:center; width:70px;">Foto / Link</th>
+                  <th style="padding:12px 14px; text-align:left;">Producto Comparable</th>
+                  <th style="padding:12px 14px; text-align:left;">Especificación / Detalle</th>
+                  <th style="padding:12px 14px; text-align:left;">Tipo de Cobro</th>
+                  <th style="padding:12px 14px; text-align:left;">Precio & Forma de Pago</th>
+                  <th style="padding:12px 14px; text-align:right;">Costo Real ($ / Bs)</th>
+                  <th style="padding:12px 14px; text-align:center; width:130px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyProviderProducts">
+                <!-- Filas de productos cargadas dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- PESTAÑA 3: COMPARADOR DE PRODUCTOS (HASTA 3 PRODUCTOS EN PARALELO) -->
+    <section id="tab-comparador" class="tab-content">
+      <div class="card">
+        <div class="comparador-header" style="margin-bottom:20px;">
+          <div class="card-title-row">
+            <div class="card-title">
+              <span>⚖️</span> Comparador de Productos en Paralelo (Hasta 3 Opciones)
+            </div>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">
+            Enfrenta hasta 3 productos simultáneamente para comparar sus fotografías, costo real de bolsillo en USD y Bolívares (tasa BCV), modalidad de cobro y especificaciones técnicas.
+          </p>
+
+          <!-- Acceso Rápido por Grupo Comparable -->
+          <div style="background:#FAF9FB; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:12px 14px; margin-bottom:16px;">
+            <div style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">
+              ⚡ Carga Rápida por Grupo de Productos Equivalentes:
+            </div>
+            <select id="selectComparablePreset" class="filter-select" style="width:100%; font-size:14px; font-weight:600;" onchange="applyComparablePreset(this.value)">
+              <!-- Opciones dinámicas de grupos comparables -->
+            </select>
+          </div>
+
+          <!-- Selectores Individuales de 3 Productos en Paralelo -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:8px;">
+            <div>
+              <label class="form-label" style="font-weight:700; color:#1D1D1F;">1️⃣ Producto Principal:</label>
+              <select id="compSlot1" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
+                <!-- Opciones dinámicas -->
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:700; color:#1D1D1F;">2️⃣ Segundo Producto:</label>
+              <select id="compSlot2" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
+                <!-- Opciones dinámicas -->
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-weight:700; color:#1D1D1F;">3️⃣ Tercer Producto (Opcional):</label>
+              <select id="compSlot3" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
+                <option value="">-- Ninguno (Solo 2 productos) --</option>
+                <!-- Opciones dinámicas -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenedor Grid de Comparación Cara a Cara (Hasta 3 Columnas) -->
+        <div class="comparison-grid" id="tripleComparisonGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:20px;">
+          <!-- Tarjetas de productos renderizadas dinámicamente -->
+        </div>
+
+        <!-- Caja de Análisis y Diferencia entre Opciones -->
+        <div id="tripleComparisonDiffBox" style="display:none; background:#F8F9FA; border-radius:14px; padding:16px; border:1px solid rgba(0,0,0,0.08);">
+          <!-- Resumen de diferencias -->
+        </div>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 4: CONSTRUCTOR & COMPARADOR DE PRESUPUESTOS (VISTA LIMPIA & POP-UP MODAL) -->
+    <section id="tab-escenarios" class="tab-content">
+      
+      <!-- 1. RESUMEN HISTÓRICO DE PRESUPUESTOS (ARRIBA) -->
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-title-row" style="flex-wrap:wrap; gap:12px;">
+          <div>
+            <div class="card-title">
+              <span>📁</span> Resumen Histórico de Presupuestos
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0 0;">
+              Administra y compara todos los presupuestos creados para la boda. Haz clic en <strong>"+ Crear Nuevo Presupuesto"</strong> para abrir el constructor modal.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="openNewBudgetModal()" style="background:#D81B60; border-color:#D81B60; font-weight:700;">
+            <span>➕</span> Crear Nuevo Presupuesto
+          </button>
+        </div>
+
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;" id="tableScenarioHistory">
+            <thead>
+              <tr style="background:#FAFAFC; border-bottom:1px solid rgba(0,0,0,0.08); text-align:left;">
+                <th style="padding:10px 14px; font-weight:700;">Presupuesto</th>
+                <th style="padding:10px 14px; font-weight:700; text-align:center;">Ítems</th>
+                <th style="padding:10px 14px; font-weight:700; text-align:right;">Costo Total Real</th>
+                <th style="padding:10px 14px; font-weight:700; text-align:right;">Total en Bolívares (BCV)</th>
+                <th style="padding:10px 14px; font-weight:700; text-align:center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyScenarioHistory">
+              <!-- Filas dinámicas del historial -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Vista Previa Desplegable Instantánea de un Presupuesto -->
+        <div id="scenarioPreviewContainer" style="display:none; margin-top:16px; padding:16px; background:#F8F9FA; border-radius:12px; border:1px solid rgba(0,0,0,0.08);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="font-weight:700; font-size:14px; color:#1D1D1F;" id="previewScenarioTitle">
+              📦 Vista Previa de Ítems
+            </div>
+            <button class="btn btn-secondary mini-btn" onclick="closeScenarioPreview()">
+              ✖️ Cerrar Vista Previa
+            </button>
+          </div>
+          <div id="previewScenarioContent" style="max-height:280px; overflow-y:auto;">
+            <!-- Contenido generado dinámicamente -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. COMPARADOR CARA A CARA CON ANÁLISIS DE DIFERENCIAS -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card-title-row" style="flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="card-title">
+              <span>⚖️</span> Comparador Cara a Cara con Análisis de Diferencias
+            </div>
+            <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0 0;">
+              Compara dos presupuestos creados en paralelo. El sistema calcula la brecha neta exacta en dólares y bolívares, determinando cuál opción es más conveniente para Luis y Vane.
+            </p>
+          </div>
+          <button class="btn btn-primary" onclick="exportSideBySidePdf()">
+            <span>📄</span> Exportar Comparativa a PDF
+          </button>
+        </div>
+
+        <!-- 1. Cuadro Superior de Analítica / Resultado (Brecha Neta y KPIs) -->
+        <div id="diffAnalysisCard" style="margin-top:20px; margin-bottom:20px;">
+          <!-- Renderizado dinámico del análisis y KPIs -->
+        </div>
+
+        <!-- 2. Tabla Detallada Cara a Cara (Selectores directamente en los encabezados de columna) -->
+        <div id="sideBySideContainer" style="overflow-x:auto;">
+          <!-- Tabla comparativa renderizada aquí -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- MODAL: NUEVO / EDITAR PROVEEDOR (Cero Campos Obligatorios) -->
+  <div class="modal-overlay" id="modalProvider">
+    <div class="modal-sheet">
+      <button class="modal-close" onclick="closeModal('modalProvider')">&times;</button>
+      <h2 style="font-size:20px; margin-bottom:6px; font-weight:700;" id="modalProviderTitle">Nuevo Proveedor</h2>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
+        💡 Ningún campo es obligatorio. Si solo deseas escribir el nombre o el teléfono y guardar, el sistema lo aceptará de inmediato.
+      </p>
+
+      <input type="hidden" id="provId" />
+      
+      <div class="form-group">
+        <label class="form-label">Nombre del Proveedor / Empresa</label>
+        <input type="text" id="provNombre" class="form-input" placeholder="Ej. Dulces Creaciones Carla" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rubro General / Categoría (Selecciona o escribe una nueva)</label>
+          <input type="text" id="provRubro" class="form-input" list="listRubrosProveedores" placeholder="Escribe o selecciona (ej. Anillos y Joyería)..." />
+          <datalist id="listRubrosProveedores"></datalist>
+          <div id="quickRubroPills" class="category-pills-row" style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">¿Acepta Tasa Dólar / Euro BCV?</label>
+          <select id="provAceptaBcv" class="form-select">
+            <option value="Sí">Sí (100% tasa oficial BCV)</option>
+            <option value="Parcial">Parcial</option>
+            <option value="No" selected>No (Solo Divisas en Efectivo / USDT)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono de Contacto</label>
+          <input type="text" id="provTelefono" class="form-input" placeholder="Ej. 0414-1234567" />
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
+            El botón de WhatsApp wa.me se generará automáticamente.
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Red Social / Enlace Web</label>
+          <input type="text" id="provRedSocial" class="form-input" placeholder="https://instagram.com/..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ubicación</label>
+        <input type="text" id="provUbicacion" class="form-input" placeholder="Ej. Chacao, Caracas" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas y Observaciones</label>
+        <textarea id="provNotas" class="form-textarea" rows="2" placeholder="Detalles de contacto, condiciones, horarios..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Foto / Logotipo del Proveedor (Google Drive)</label>
+        <input type="file" id="provFotoFile" accept="image/*" class="form-input" />
+        <input type="hidden" id="provFotoRuta" />
+        <div id="provFotoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="saveProviderAction()">
+          <span>💾</span> Guardar Datos
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalProvider')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVO / EDITAR PRODUCTO (Cero Campos Obligatorios) -->
+  <div class="modal-overlay" id="modalItem">
+    <div class="modal-sheet">
+      <button class="modal-close" onclick="closeModal('modalItem')">&times;</button>
+      <h2 style="font-size:20px; margin-bottom:6px; font-weight:700;" id="modalItemTitle">Nuevo Producto en Catálogo</h2>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
+        💡 Ningún campo bloquea el guardado. Puedes cargar la foto de tu computadora y se guardará localmente de forma portable.
+      </p>
+
+      <input type="hidden" id="itemId" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <select id="itemProvId" class="form-select">
+            <!-- Cargado dinámicamente -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoría del Producto (Selecciona o escribe una nueva)</label>
+          <input type="text" id="itemCategoria" class="form-input" list="listItemCategorias" placeholder="Escribe o selecciona (ej. Anillos y Joyería, Chucherías)..." />
+          <datalist id="listItemCategorias"></datalist>
+          <div id="quickItemCatPills" class="category-pills-row" style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Etiqueta de Producto Comparable (Clave para Comparar)</label>
+        <input type="text" id="itemComparable" class="form-input" list="listComparables" placeholder="Ej. Torta de Vainilla, Salón de Fiesta, Plato Principal Almuerzo..." />
+        <datalist id="listComparables"></datalist>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">
+          Usa nombres estándar para que el comparador confronte productos equivalentes.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Detalle y Especificación</label>
+        <textarea id="itemDetalle" class="form-textarea" rows="2" placeholder="Qué incluye el servicio, sabores, porciones, dimensiones..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tipo de Cobro</label>
+          <select id="itemTipoCobro" class="form-select">
+            <option value="Fijo Global">Fijo Global (1 vez)</option>
+            <option value="Por Invitado">Por Invitado (Multiplica invitados)</option>
+            <option value="Por Unidad">Por Unidad (Multiplica cantidad)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cantidad de Unidades (si es por unidad)</label>
+          <input type="number" id="itemCantidad" class="form-input" value="1" min="1" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Precio Unitario Cotizado</label>
+          <input type="number" step="0.01" id="itemPrecio" class="form-input" placeholder="0.00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Moneda Cotizada</label>
+          <select id="itemMoneda" class="form-select">
+            <option value="USD" selected>USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="VES">Bolívares (VES)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Forma de Pago Exigida</label>
+        <select id="itemFormaPago" class="form-select">
+          <option value="Bs a tasa Dólar BCV">Bs a tasa Dólar BCV (Ahorro Cambiario)</option>
+          <option value="Bs a tasa Euro BCV">Bs a tasa Euro BCV (Ahorro Cambiario)</option>
+          <option value="USD Efectivo (Billetes)" selected>USD Efectivo (Billetes físicos)</option>
+          <option value="USDT / Binance">USDT / Binance</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Enlace de Referencia (Instagram / MercadoLibre)</label>
+        <input type="text" id="itemLinkRef" class="form-input" placeholder="https://..." />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Foto del Producto (Google Drive)</label>
+        <input type="file" id="itemFotoFile" accept="image/*" class="form-input" />
+        <input type="hidden" id="itemFotoRuta" />
+        <div id="itemFotoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="saveItemAction()">
+          <span>💾</span> Guardar Datos
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalItem')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL POP-UP: CREAR / EDITAR PRESUPUESTO COMPLETO (FACTURA) -->
+  <div class="modal-overlay" id="modalBudgetInvoice">
+    <div class="modal-sheet" style="max-width:960px; width:95%; max-height:92vh; display:flex; flex-direction:column; padding:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:14px; margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px; font-weight:800; margin:0; color:#1D1D1F;" id="modalBudgetTitle">
+            ➕ Crear Nuevo Presupuesto
+          </h2>
+          <p style="font-size:12px; color:var(--text-secondary); margin:4px 0 0 0;">
+            Define el nombre y agrega libremente los renglones de cotizaciones para este presupuesto.
+          </p>
+        </div>
+        <button class="modal-close" onclick="closeModal('modalBudgetInvoice')" style="position:static; margin:0;">&times;</button>
+      </div>
+
+      <input type="hidden" id="modalBudgetId" />
+
+      <!-- Form Inputs: Nombre & Invitados -->
+      <div style="display:flex; gap:16px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+        <div style="flex:3; min-width:260px;">
+          <label class="form-label" style="font-weight:700;">Nombre del Presupuesto *</label>
+          <input type="text" id="modalBudgetName" class="form-input" placeholder="Ej. Presupuesto 1: Opción Jardín Ensueño" style="font-size:14px; font-weight:600;" />
+        </div>
+        <div style="flex:1; min-width:140px;">
+          <label class="form-label" style="font-weight:700;">Invitados Estimados</label>
+          <input type="number" id="modalBudgetGuests" class="form-input" value="100" min="1" max="1000" onchange="recalculateModalBudgetCosts()" />
+        </div>
+      </div>
+
+      <!-- Resumen Financiero en Vivo dentro del Pop-up -->
+      <div style="display:flex; gap:12px; flex-wrap:wrap; padding:12px 16px; background:#FAFAFC; border-radius:12px; border:1px solid rgba(0,0,0,0.06); align-items:center; margin-bottom:16px;">
+        <div style="flex:1; min-width:120px;">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Costo Total Real</div>
+          <div id="modalKpiReal" style="font-size:19px; font-weight:800; color:#1D1D1F;">$0.00</div>
+        </div>
+        <div style="flex:1; min-width:120px;">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Total Bolívares (VES)</div>
+          <div id="modalKpiVes" style="font-size:16px; font-weight:700; color:#1D1D1F;">Bs 0.00</div>
+        </div>
+        <div style="flex:1; min-width:120px;">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Total Nominal ($)</div>
+          <div id="modalKpiNom" style="font-size:16px; font-weight:700; color:#666;">$0.00</div>
+        </div>
+        <div style="flex:1; min-width:120px;">
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Ahorro Brecha BCV</div>
+          <div id="modalKpiAhorro" style="font-size:16px; font-weight:700; color:#1B8738;">$0.00</div>
+        </div>
+        <div>
+          <button type="button" class="btn btn-blue mini-btn" onclick="addModalInvoiceRow()">
+            <span>➕</span> Agregar Renglón
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla Estilo Factura en el Pop-up -->
+      <div class="table-responsive" style="flex:1; overflow-x:auto !important; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid rgba(0,0,0,0.08); border-radius:12px; min-height:220px; max-height:380px; margin-bottom:16px; width:100%; background:#FFFFFF;">
+        <table style="width:100%; min-width:760px; border-collapse:collapse; font-size:13px;" id="tableModalInvoice">
+          <thead style="background:#F2F2F7; position:sticky; top:0; z-index:2; border-bottom:1px solid rgba(0,0,0,0.1);">
+            <tr>
+              <th style="padding:9px 10px; text-align:center; width:34px;">#</th>
+              <th style="padding:9px 10px; text-align:left; min-width:160px;">Proveedor</th>
+              <th style="padding:9px 10px; text-align:left; min-width:220px;">Producto / Servicio</th>
+              <th style="padding:9px 10px; text-align:left; min-width:140px;">Rubro & Cobro</th>
+              <th style="padding:9px 10px; text-align:center; width:75px;">Cant.</th>
+              <th style="padding:9px 10px; text-align:right; width:110px;">Subtotal Real ($)</th>
+              <th style="padding:9px 10px; text-align:right; width:120px;">Subtotal (VES)</th>
+              <th style="padding:9px 10px; text-align:center; width:44px;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyModalInvoiceRows">
+            <!-- Renglones generados dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer del Pop-up: Botones Guardar y Cancelar Centrados y Apilados -->
+      <div class="modal-actions" style="border-top:1px solid rgba(0,0,0,0.08); padding-top:16px;">
+        <button type="button" class="btn btn-primary" onclick="saveModalBudgetAction()" style="background:#D81B60; border-color:#D81B60; font-weight:700;">
+          <span>💾</span> Guardar Presupuesto
+        </button>
+        <button type="button" class="btn btn-blue" onclick="addModalInvoiceRow()">
+          <span>➕</span> Agregar Renglón / Ítem
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalBudgetInvoice')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVO / EDITAR INVITADO -->
+  <div class="modal-overlay" id="modalGuest">
+    <div class="modal-sheet" style="max-width:540px;">
+      <button class="modal-close" onclick="closeModal('modalGuest')">&times;</button>
+      <h2 style="font-size:20px; margin-bottom:6px; font-weight:700;" id="modalGuestTitle">Nuevo Invitado</h2>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
+        Registra los datos de asistencia, contacto para WhatsApp y requerimientos especiales de menú.
+      </p>
+
+      <input type="hidden" id="guestId" />
+
+      <div class="form-group">
+        <label class="form-label">Nombre y Apellido</label>
+        <input type="text" id="guestNombre" class="form-input" placeholder="Ej. Carlos Mendoza" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rol / Grupo de Invitados</label>
+          <select id="guestRol" class="form-select">
+            <option value="Familia Novio">Familia Novio</option>
+            <option value="Familia Novia">Familia Novia</option>
+            <option value="Amigos">Amigos</option>
+            <option value="Padrinos / Madrinas">Padrinos / Madrinas</option>
+            <option value="Cortejo de Boda">Cortejo de Boda</option>
+            <option value="Compañeros de Trabajo">Compañeros de Trabajo</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estado de Confirmación</label>
+          <select id="guestEstado" class="form-select">
+            <option value="Pendiente" selected>⏳ Pendiente</option>
+            <option value="Confirmado">✅ Confirmado</option>
+            <option value="Declinado">❌ Declinado (No asiste)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono / WhatsApp</label>
+          <input type="text" id="guestTelefono" class="form-input" placeholder="Ej. 0414-1234567" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Acompañantes Adicionales (+1)</label>
+          <input type="number" id="guestAcompanantes" class="form-input" value="0" min="0" max="10" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Restricciones Alimentarias / Menú</label>
+          <input type="text" id="guestRestricciones" class="form-input" placeholder="Ej. Vegetariano, Celíaco, Sin mariscos..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mesa Asignada (Opcional)</label>
+          <input type="text" id="guestMesa" class="form-input" placeholder="Ej. 1, 2, Principal..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas Adicionales</label>
+        <textarea id="guestNotas" class="form-textarea" rows="2" placeholder="Detalles particulares, traslados, etc..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Foto / Identificación del Invitado (Google Drive)</label>
+        <input type="file" id="guestFotoFile" accept="image/*" class="form-input" />
+        <input type="hidden" id="guestFotoRuta" />
+        <div id="guestFotoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="saveGuestAction()">
+          <span>💾</span> Guardar Invitado
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalGuest')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVA / EDITAR TAREA LOGÍSTICA (ESTILO ASANA) -->
+  <div class="modal-overlay" id="modalTask">
+    <div class="modal-sheet" style="max-width:540px;">
+      <button class="modal-close" onclick="closeModal('modalTask')">&times;</button>
+      <h2 style="font-size:20px; margin-bottom:6px; font-weight:700;" id="modalTaskTitle">Nueva Tarea Logística</h2>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">
+        Organiza las actividades previas y del día de la boda asignando responsables y plazos claros.
+      </p>
+
+      <input type="hidden" id="taskId" />
+
+      <div class="form-group">
+        <label class="form-label">Título de la Tarea</label>
+        <input type="text" id="taskTitulo" class="form-input" placeholder="Ej. Contratar servicio de fotografía y video" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoría Logística</label>
+          <select id="taskCategoria" class="form-select">
+            <option value="Trámites Legales">Trámites Legales</option>
+            <option value="Ceremonia">Ceremonia Religiosa / Civil</option>
+            <option value="Recepción / Fiesta">Recepción / Fiesta</option>
+            <option value="Vestimenta y Belleza">Vestimenta y Belleza</option>
+            <option value="Proveedores y Pagos">Proveedores y Pagos</option>
+            <option value="Protocolo y Cortejo">Protocolo y Cortejo</option>
+            <option value="General" selected>General</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable Asignado</label>
+          <select id="taskResponsable" class="form-select">
+            <option value="Ambos" selected>Ambos (Luis y Vane)</option>
+            <option value="Luis">Luis</option>
+            <option value="Vane">Vane</option>
+            <option value="Madrina / Padrino">Madrina / Padrino</option>
+            <option value="Wedding Planner">Wedding Planner</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha Límite (Deadline)</label>
+          <input type="date" id="taskFechaLimite" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select id="taskPrioridad" class="form-select">
+            <option value="Alta">🔴 Alta (Crítica)</option>
+            <option value="Media" selected>🟡 Media</option>
+            <option value="Baja">🔵 Baja</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Estado de la Tarea</label>
+        <select id="taskEstado" class="form-select">
+          <option value="Pendiente" selected>⏳ Pendiente</option>
+          <option value="En Progreso">🔄 En Progreso</option>
+          <option value="Completada">✅ Completada</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notas y Enlaces</label>
+        <textarea id="taskNotas" class="form-textarea" rows="2" placeholder="Detalles de contacto, direcciones, requerimientos..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Foto / Comprobante / Referencia Visual (Google Drive)</label>
+        <input type="file" id="taskFotoFile" accept="image/*" class="form-input" />
+        <input type="hidden" id="taskFotoRuta" />
+        <div id="taskFotoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="saveTaskAction()">
+          <span>💾</span> Guardar Tarea
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalTask')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONFIRMACIÓN DE SEGURIDAD OBLIGATORIO AL ELIMINAR (ESTILO macOS) -->
+  <div class="modal-overlay" id="modalConfirmDelete">
+    <div class="modal-sheet" style="max-width:480px; text-align:center;">
+      <div style="font-size:46px; margin-bottom:12px;">⚠️</div>
+      <h2 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:10px;" id="confirmDeleteTitle">
+        ¿Estás seguro de que deseas eliminar este registro?
+      </h2>
+      <p style="font-size:13px; line-height:1.55; color:#555; margin-bottom:24px;" id="confirmDeleteWarning">
+        Esta acción eliminará el registro de la base de datos en la nube y no se puede recuperar.
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger" id="btnConfirmDeleteAction">
+          <span>🗑️</span> Sí, confirmar y eliminar
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalConfirmDelete')">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE BLOQUEO DE EXCEL -->
+  <div class="modal-overlay" id="modalExcelLocked">
+    <div class="modal-sheet" style="max-width:480px; text-align:center;">
+      <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+      <h2 style="font-size:20px; font-weight:800; color:var(--text-main); margin-bottom:12px;">Archivo de Excel en Uso</h2>
+      <p style="font-size:14px; line-height:1.5; color:#555; margin-bottom:24px;">
+        Por favor cierra el archivo <strong>Base_Datos_Boda.xlsx</strong> en Microsoft Excel y vuelve a presionar Guardar.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeModal('modalExcelLocked')">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GLOBAL: VISTA COMPLETA (LIGHTBOX / DETALLE EXPANDIDO) -->
+  <div class="modal-overlay" id="modalFullDetailViewer" style="z-index:9999;">
+    <div class="modal-sheet lightbox-sheet" style="max-width:640px; width:92%; max-height:92vh; overflow-y:auto; padding:24px 20px 90px 20px;">
+      <button class="modal-close" onclick="closeModal('modalFullDetailViewer')">&times;</button>
+      <div id="lightboxHeader" style="margin-bottom:14px;">
+        <span id="lightboxBadge" class="cat-badge" style="font-size:12px; margin-bottom:6px; display:inline-block;">Detalle</span>
+        <h2 id="lightboxTitle" style="font-size:20px; font-weight:800; color:#1D1D1F; margin-top:4px;">Título</h2>
+      </div>
+      <div id="lightboxImageContainer" style="text-align:center; margin-bottom:18px; background:#F2F2F7; border-radius:14px; overflow:hidden; border:1px solid #E5E5EA; min-height:140px; display:flex; align-items:center; justify-content:center;">
+        <!-- Foto grande o placeholder -->
+      </div>
+      <div id="lightboxDetailsGrid" class="lightbox-info-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:18px;">
+        <!-- Campos informativos con clave: valor -->
+      </div>
+      <div id="lightboxNotesBox" style="background:#FAF9FB; border-radius:12px; padding:12px; margin-bottom:18px; border:1px solid rgba(0,0,0,0.06);">
+        <!-- Notas adicionales -->
+      </div>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalFullDetailViewer')">
+          Cerrar Vista Completa
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de Notificaciones Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Pie de Página Institucional con Versión y Fecha de Actualización -->
+  <footer class="app-footer">
+    <div class="footer-brand">
+      <span>💍 La Boda de Luis y Vane</span> • <span>Planificador Financiero & Logístico</span>
+    </div>
+    <div class="footer-meta">
+      <span class="version-badge">Versión 4.3 - Noviembre 2026</span> • 
+      <a href="javascript:void(0)" onclick="openManual()" style="color:var(--text-sub); text-decoration:underline; cursor:pointer;">📖 Ver Manual de Uso en PDF</a>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Sistema de arranque autónomo y reintentos (3 intentos a 400ms) sin requerir F5
+    (function() {
+      var attempts = 0;
+      var maxRetries = 3;
+      var retryIntervalMs = 400;
+
+      function attemptConnection() {
+        attempts++;
+        if (!window.isDataLoaded && typeof fetchData === "function") {
+          console.log("[Auto-Init] Verificando datos locales (intento " + attempts + "/" + maxRetries + ")...");
+          fetchData();
+        }
+        if (attempts < maxRetries && !window.isDataLoaded) {
+          setTimeout(attemptConnection, retryIntervalMs);
+        }
+      }
+
+      // Inicialización instantánea
+      if (typeof startApp === "function" && !window.appStarted) {
+        startApp();
+      }
+      setTimeout(attemptConnection, retryIntervalMs);
+    })();
+  </script>
+</body>
+</html>
