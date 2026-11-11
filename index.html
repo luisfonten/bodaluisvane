@@ -1117,7 +1117,7 @@
       </div>
 
       <!-- Tabla Estilo Factura en el Pop-up -->
-      <div class="table-responsive" style="flex:1; overflow-x:auto !important; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid rgba(0,0,0,0.08); border-radius:12px; min-height:220px; max-height:380px; margin-bottom:14px; width:100%; background:#FFFFFF;">
+      <div class="table-responsive" style="flex:1; overflow-x:auto !important; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid rgba(0,0,0,0.08); border-radius:12px; min-height:220px; max-height:420px; margin-bottom:14px; width:100%; background:#FFFFFF;">
         <table style="width:100%; min-width:760px; border-collapse:collapse; font-size:13px;" id="tableModalInvoice">
           <thead style="background:#F2F2F7; position:sticky; top:0; z-index:2; border-bottom:1px solid rgba(0,0,0,0.1);">
             <tr>
@@ -1135,19 +1135,6 @@
             <!-- Renglones generados dinámicamente -->
           </tbody>
         </table>
-      </div>
-
-      <!-- Footer del Pop-up -->
-      <div class="modal-actions" style="border-top:1px solid rgba(0,0,0,0.08); padding-top:12px; margin-top:0;">
-        <button type="button" class="btn btn-primary" onclick="saveModalBudgetAction()" style="background:#D81B60; border-color:#D81B60; font-weight:700;">
-          <span>💾</span> Guardar Presupuesto
-        </button>
-        <button type="button" class="btn btn-blue" onclick="addModalInvoiceRow()">
-          <span>➕</span> Agregar Renglón / Ítem
-        </button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal('modalBudgetInvoice')">
-          Cancelar
-        </button>
       </div>
     </div>
   </div>
@@ -1396,7 +1383,7 @@
       <span>💍 La Boda de Luis y Vane</span> • <span>Planificador Financiero & Logístico</span>
     </div>
     <div class="footer-meta">
-      <span class="version-badge">Versión 4.5 - Noviembre 2026</span> • 
+      <span class="version-badge">Versión 4.6 - Noviembre 2026 (GitHub Pages & Mobile Edition)</span> • 
       <a href="javascript:void(0)" onclick="openManual()" style="color:var(--text-sub); text-decoration:underline; cursor:pointer;">📖 Ver Manual de Uso en PDF</a>
     </div>
   </footer>
@@ -1477,7 +1464,7 @@
           <span style="font-size:26px;">📖</span>
           <div>
             <h2 style="font-size:19px; font-weight:800; margin:0; color:#1D1D1F;">Manual Oficial & Diccionario Financiero</h2>
-            <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0 0;">La Boda de Luis y Vane • Versión 4.5</p>
+            <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0 0;">La Boda de Luis y Vane • Versión 4.6 - Noviembre 2026 (GitHub Pages & Mobile Edition)</p>
           </div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -1602,28 +1589,11 @@
 
   <script src="app.js"></script>
   <script>
-    // Sistema de arranque autónomo y reintentos (3 intentos a 400ms) sin requerir F5
+    // Inicialización limpia y controlada
     (function() {
-      var attempts = 0;
-      var maxRetries = 3;
-      var retryIntervalMs = 400;
-
-      function attemptConnection() {
-        attempts++;
-        if (!window.isDataLoaded && typeof fetchData === "function") {
-          console.log("[Auto-Init] Verificando datos locales (intento " + attempts + "/" + maxRetries + ")...");
-          fetchData();
-        }
-        if (attempts < maxRetries && !window.isDataLoaded) {
-          setTimeout(attemptConnection, retryIntervalMs);
-        }
-      }
-
-      // Inicialización instantánea
       if (typeof startApp === "function" && !window.appStarted) {
         startApp();
       }
-      setTimeout(attemptConnection, retryIntervalMs);
     })();
   </script>
 </body>

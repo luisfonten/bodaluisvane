@@ -6,6 +6,26 @@ window.DEFAULT_GAS_URL = DEFAULT_GAS_URL;
 window.DEFAULT_SCRIPT_URL = DEFAULT_SCRIPT_URL;
 window.DEFAULT_GAS_VIEW_URL = DEFAULT_GAS_VIEW_URL;
 
+// Blindaje numérico permanente (punto vs coma)
+function toSafeNumber(val, fallback = 0) {
+  if (val === null || val === undefined || val === "") return fallback;
+  if (typeof val === "number") return isNaN(val) ? fallback : val;
+  let s = String(val).trim();
+  if (s === "") return fallback;
+  if (s.indexOf('.') !== -1 && s.indexOf(',') !== -1) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.indexOf(',') !== -1) {
+    s = s.replace(',', '.');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? fallback : n;
+}
+window.toSafeNumber = toSafeNumber;
+
 // Funciones globales y blindadas de formateo numérico, monetario y de fechas
 function formatNumber(val, decimals = 2) {
   try {
@@ -383,12 +403,20 @@ function safeRender(moduleName, renderFn) {
 }
 window.safeRender = safeRender;
 
+let isGasSyncing = false;
+
 // Fetch all data directly from Google Apps Script Web App (/exec)
 async function fetchData() {
   await syncFromGASDirect();
 }
 
 async function syncFromGASDirect() {
+  if (isGasSyncing) {
+    console.log("[syncFromGASDirect] Sincronización en curso, omitiendo petición concurrente duplicada.");
+    return false;
+  }
+  isGasSyncing = true;
+
   let gasUrl = (cloudConfig.google_sheets_url || "").trim();
   try {
     if (!gasUrl) gasUrl = (localStorage.getItem("google_sheets_url") || "").trim();
@@ -405,7 +433,7 @@ async function syncFromGASDirect() {
   let json = null;
   // 1. Aislamiento estricto de red: solo errores HTTP o de conexión disparan catch de red
   try {
-    const res = await fetchWithTimeout(gasUrl, {}, 14000);
+    const res = await fetchWithTimeout(gasUrl, {}, 30000);
     json = await res.json();
     if (!json || !json.success || !json.data) {
       throw new Error((json && json.error) || "No se recibieron datos de la hoja");
@@ -414,7 +442,10 @@ async function syncFromGASDirect() {
     console.warn("[GAS Direct Network Error]:", err);
     updateCloudUI({ status: "error", message: err.message || "Error al conectar con Google Sheets" });
     showToast("⚠️ " + (err.message || "Error al conectar con Google Sheets"), "error");
+    isGasSyncing = false;
     return false;
+  } finally {
+    isGasSyncing = false;
   }
 
   // 2. Extracción y persistencia de datos (si la red respondió exitosa)
@@ -1364,8 +1395,8 @@ async function syncBcvRates() {
 // ==========================================
 let lastCloudErrorAlerted = null;
 
-// Helper: Fetch con límite estricto de timeout (14s para Google Apps Script)
-async function fetchWithTimeout(url, options = {}, timeoutMs = 14000) {
+// Helper: Fetch con límite seguro de timeout (30s para Google Apps Script)
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -4285,10 +4316,21 @@ async function saveModalBudgetAction() {
       ID_Escenario: targetScId,
       Nombre_Escenario: name,
       Invitados_Escenario: guests,
-      items: modalBudgetRows.map(r => ({
+      items: newRows.map(r => ({
         ID_Item: r.ID_Item,
-        Cantidad_Escenario: parseFloat(r.Cantidad_Unidades) || 1,
-        Cantidad_Unidades: parseFloat(r.Cantidad_Unidades) || 1
+        Categoria: r.Categoria,
+        Producto_Comparable: r.Producto_Comparable,
+        Nombre_Proveedor: r.Nombre_Proveedor,
+        Detalle_Especificacion: r.Detalle_Especificacion,
+        Cantidad_Escenario: toSafeNumber(r.Cantidad_Escenario || r.Cantidad_Unidades, 1),
+        Cantidad_Unidades: toSafeNumber(r.Cantidad_Escenario || r.Cantidad_Unidades, 1),
+        Precio_Unitario: toSafeNumber(r.Precio_Unitario, 0),
+        Forma_Pago_Exigida: r.Forma_Pago_Exigida,
+        Subtotal_USD_Nominal: toSafeNumber(r.Subtotal_USD_Nominal, 0),
+        Subtotal_USD_Real: toSafeNumber(r.Subtotal_USD_Real, 0),
+        Subtotal_USD_Binance: toSafeNumber(r.Subtotal_USD_Binance || r.Subtotal_USD_Real, 0),
+        Subtotal_EUR_BCV: toSafeNumber(r.Subtotal_EUR_BCV, 0),
+        Subtotal_VES: toSafeNumber(r.Subtotal_VES, 0)
       }))
     });
   } catch (err) {
