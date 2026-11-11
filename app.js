@@ -107,7 +107,6 @@ let cloudConfig = {
 };
 window.cloudConfig = cloudConfig;
 window.appData = appData;
-window.showToast = showToast;
 
 // Sincronizar todos los datos de memoria con localStorage para persistencia instantánea y offline
 function syncAppDataToLocalStorage() {
@@ -473,9 +472,53 @@ async function syncFromGASDirect() {
   return true;
 }
 
-// Abrir Manual de Usuario en PDF de forma instantánea
+// Abrir Manual de Usuario interactivo y PDF
 window.openManual = function() {
-  window.open('Manual_de_Uso_Boda.pdf', '_blank');
+  openModal('modalManual');
+};
+
+// ==========================================
+// DICCIONARIO DE TOOLTIPS INTERACTIVOS (HOVER / TAP ⓘ)
+// ==========================================
+const FINANCIAL_TOOLTIP_DATA = {
+  costo_binance: {
+    title: "🪙 Costo Binance (USDT)",
+    body: "Total neto en dólares equivalentes si pagaras en Bs cambiados a tasa Binance o USDT directo. Si pagas a tasa BCV en bolívares, este indicador refleja el costo real de bolsillo descontando el diferencial cambiario."
+  },
+  dolar_nominal: {
+    title: "💵 Dólar Nominal ($)",
+    body: "Monto contractual o precio de lista según la tasa o moneda fijada por el proveedor antes de aplicar cualquier conversión o ahorro por brecha cambiaria."
+  },
+  costo_invitado: {
+    title: "👥 Costo por Invitado",
+    body: "Inversión total dividida entre el número de invitados confirmados o estimados (incluyendo acompañantes). Permite medir la eficiencia del gasto por asistente."
+  },
+  silla_marginal: {
+    title: "🪑 1 Silla Más (Marginal)",
+    body: "Costo incremental variable que cuesta invitar a una persona adicional (comida, cotillón, centros de mesa variables), excluyendo costos fijos como fotografía o alquiler del salón."
+  },
+  ahorro_brecha: {
+    title: "📉 Ahorro Brecha BCV vs Binance",
+    body: "Diferencia a favor si pagas a tasa oficial BCV con bolívares adquiridos o valuados a la tasa de mercado Binance/USDT. A mayor brecha, mayor es el ahorro real."
+  },
+  arqueo_caja: {
+    title: "💼 Arqueo de Caja",
+    body: "Distribución de tus fondos entre Efectivo, Cuentas en Bs, Binance y Divisas para planificar los pagos según la modalidad exigida por cada proveedor."
+  }
+};
+
+window.openTooltipModal = function(key) {
+  const data = FINANCIAL_TOOLTIP_DATA[key];
+  if (!data) return;
+  const titleEl = document.getElementById("tooltipTitle");
+  const bodyEl = document.getElementById("tooltipBody");
+  if (titleEl) titleEl.innerHTML = `<span>💡</span> <span>${escapeHtml(data.title)}</span>`;
+  if (bodyEl) bodyEl.innerHTML = `<p style="margin:0; font-size:13.5px; line-height:1.6; color:#2C3E50;">${escapeHtml(data.body)}</p>`;
+  openModal("modalTooltip");
+};
+
+window.closeTooltipModal = function() {
+  closeModal("modalTooltip");
 };
 
 // Control global del Modal de Configuración y Sincronización
@@ -672,18 +715,23 @@ function initHeaderControls() {
       updateSummaryPills();
       renderDashboard();
       renderProviders();
-      if (document.getElementById("tab-escenarios").classList.contains("active")) {
+      const tabEsc = document.getElementById("tab-escenarios");
+      if (tabEsc && tabEsc.classList.contains("active")) {
         renderScenariosTab();
       }
       debouncedSaveConfig();
     });
   });
 
-  document.getElementById("btnSyncBcv").addEventListener("click", syncBcvRates);
-  document.getElementById("btnReloadExcel").addEventListener("click", () => {
-    fetchData();
-    showToast("Datos recargados exitosamente desde Base_Datos_Boda.xlsx", "success");
-  });
+  const btnSyncBcv = document.getElementById("btnSyncBcv");
+  if (btnSyncBcv) btnSyncBcv.addEventListener("click", syncBcvRates);
+  const btnReloadExcel = document.getElementById("btnReloadExcel");
+  if (btnReloadExcel) {
+    btnReloadExcel.addEventListener("click", () => {
+      fetchData();
+      showToast("Datos recargados exitosamente", "success");
+    });
+  }
 
   const btnConnectCloud = document.getElementById("btnConnectCloud");
   if (btnConnectCloud) {
@@ -785,13 +833,13 @@ function adjustGuests(delta) {
 }
 
 function updateSummaryPills() {
-  const cfg = appData.config;
+  const cfg = appData.config || {};
   const guests = parseInt(cfg.Invitados_Base) || 100;
   const meta = parseFloat(cfg.Presupuesto_Meta_USD) || 2500;
   const techo = parseFloat(cfg.Presupuesto_Techo_USD) || 3200;
   const bcvUsd = parseFloat(cfg.Tasa_USD_BCV) || 45.50;
   const bcvEur = parseFloat(cfg.Tasa_EUR_BCV) || 49.80;
-  const usdt = parseFloat(cfg.Tasa_Efectivo_USDT) || 54.00;
+  const usdt = parseFloat(cfg.Tasa_Binance || cfg.Tasa_Efectivo_USDT) || 54.00;
 
   const elGuests = document.getElementById("summaryGuests");
   if (elGuests) elGuests.textContent = `${guests} Inv.`;
@@ -804,31 +852,48 @@ function updateSummaryPills() {
 
   const elEur = document.getElementById("summaryEurBcv");
   if (elEur) elEur.textContent = `Euro BCV: ${bcvEur.toFixed(2)} Bs`;
+
+  const elBin = document.getElementById("summaryBinance") || document.getElementById("summaryBinanceRate");
+  if (elBin) elBin.textContent = `Tasa Binance: ${usdt.toFixed(2)} Bs`;
 }
 
 // ==========================================
-// Categorías y Rubros Flexibles
+// Categorías y Rubros Maestros Asana (4 Pilares + CRUD)
 // ==========================================
-function getAllCategories() {
-  const defaultCats = [
-    "Espacio / Salón",
-    "Alimentos y Bebidas (Catering)",
-    "Fotografía y Video",
-    "Música, Sonido e Iluminación",
-    "Decoración y Flores",
-    "Vestuario y Belleza",
-    "Anillos y Joyería",
-    "Papelería y Recuerdos",
-    "Torta y Dulces",
-    "Transporte y Logística",
-    "Otros"
-  ];
+const MASTER_ASANA_CATEGORIES = ["Comida", "Decoración", "Vestimenta", "Logística"];
 
+const ASANA_CATEGORY_SYNONYMS = {
+  "comida": "Comida", "alimentacion": "Comida", "alimentación": "Comida", "catering": "Comida",
+  "bebida": "Comida", "bebidas": "Comida", "reposteria": "Comida", "repostería": "Comida",
+  "torta": "Comida", "tortas": "Comida", "dulces": "Comida", "barra": "Comida",
+  "cocteleria": "Comida", "coctelería": "Comida", "pasapalos": "Comida", "banquete": "Comida",
+  "alimentos y bebidas (catering)": "Comida", "torta y dulces": "Comida",
+  "decoracion": "Decoración", "decoración": "Decoración", "flores": "Decoración", "floristería": "Decoración",
+  "mobiliario": "Decoración", "iluminacion": "Decoración", "iluminación": "Decoración",
+  "ambientacion": "Decoración", "ambientación": "Decoración", "montaje": "Decoración",
+  "decoración y flores": "Decoración",
+  "vestimenta": "Vestimenta", "traje": "Vestimenta", "trajes": "Vestimenta", "vestido": "Vestimenta",
+  "vestidos": "Vestimenta", "maquillaje": "Vestimenta", "peinado": "Vestimenta", "calzado": "Vestimenta",
+  "accesorios": "Vestimenta", "joyeria": "Vestimenta", "joyería": "Vestimenta", "estilismo": "Vestimenta",
+  "vestuario y belleza": "Vestimenta", "anillos y joyería": "Vestimenta",
+  "logistica": "Logística", "logística": "Logística", "transporte": "Logística", "fotografia": "Logística",
+  "fotografía": "Logística", "video": "Logística", "audiovisual": "Logística", "sonido": "Logística",
+  "musica": "Logística", "música": "Logística", "protocolo": "Logística", "seguridad": "Logística",
+  "general": "Logística", "coordinacion": "Logística", "coordinación": "Logística",
+  "papeleria": "Logística", "papelería": "Logística", "invitaciones": "Logística", "salon": "Logística",
+  "salón": "Logística", "locacion": "Logística", "locación": "Logística",
+  "espacio / salón": "Logística", "fotografía y video": "Logística",
+  "música, sonido e iluminación": "Logística", "papelería y recuerdos": "Logística",
+  "transporte y logística": "Logística", "otros": "Logística"
+};
+
+function getAllCategories() {
   const fromProv = (appData.proveedores || []).map(p => (p.Rubro_General || "").trim());
   const fromCat = (appData.catalogo || []).map(c => (c.Categoria || "").trim());
   const fromScen = (appData.escenarios_rows || []).map(r => (r.Categoria || "").trim());
+  const fromTasks = (appData.tareas || []).map(t => (t.Categoria_Logistica || "").trim());
 
-  const set = new Set([...defaultCats, ...fromProv, ...fromCat, ...fromScen].filter(Boolean));
+  const set = new Set([...MASTER_ASANA_CATEGORIES, ...fromProv, ...fromCat, ...fromScen, ...fromTasks].filter(Boolean));
   return Array.from(set).sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 }
 
@@ -927,6 +992,201 @@ function populateCategoryDropdown() {
   }
 }
 
+function escapeJs(str) {
+  return String(str || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+window.escapeJs = escapeJs;
+
+// ==========================================
+// GESTOR DE CATEGORÍAS MAESTRAS (CRUD & NORMALIZACIÓN ASANA)
+// ==========================================
+window.openCategoriesManagerModal = function() {
+  renderCategoriesManagerList();
+  openModal("modalManageCategories");
+};
+
+window.renderCategoriesManagerList = function() {
+  const container = document.getElementById("categoriesListContainer");
+  if (!container) return;
+
+  const allCats = getAllCategories();
+  if (allCats.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-secondary); font-size:13px;">No hay categorías registradas.</div>`;
+    return;
+  }
+
+  let html = `<div style="display:flex; flex-direction:column;">`;
+  allCats.forEach(cat => {
+    const provCount = (appData.proveedores || []).filter(p => (p.Rubro_General || "").trim().toLowerCase() === cat.toLowerCase()).length;
+    const catCount = (appData.catalogo || []).filter(c => (c.Categoria || "").trim().toLowerCase() === cat.toLowerCase()).length;
+    const taskCount = (appData.tareas || []).filter(t => (t.Categoria_Logistica || "").trim().toLowerCase() === cat.toLowerCase()).length;
+    const totalUsage = provCount + catCount + taskCount;
+    const isMaster = MASTER_ASANA_CATEGORIES.some(m => m.toLowerCase() === cat.toLowerCase());
+
+    html += `
+      <div class="cat-manager-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div>
+          <div style="font-weight:700; font-size:13.5px; color:#1D1D1F; display:flex; align-items:center; gap:6px;">
+            <span>🏷️</span>
+            <span>${escapeHtml(cat)}</span>
+            ${isMaster ? '<span style="background:#E8F8EE; color:#1B8738; font-size:10px; font-weight:800; padding:1px 6px; border-radius:6px;">Maestra</span>' : ''}
+          </div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+            ${totalUsage} vinculaciones (${provCount} prov, ${catCount} prod, ${taskCount} tareas)
+          </div>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button type="button" class="btn btn-secondary mini-btn" onclick="renameCategoryAction('${escapeJs(cat)}')">
+            ✏️ Renombrar
+          </button>
+          <button type="button" class="btn btn-danger mini-btn" onclick="deleteCategoryAction('${escapeJs(cat)}', ${totalUsage})">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+};
+
+window.addNewCategoryAction = function() {
+  const input = document.getElementById("inputNewCategoryName");
+  const val = (input ? input.value : "").trim();
+  if (!val) {
+    showToast("Por favor ingresa un nombre para la categoría", "warning");
+    return;
+  }
+  const allCats = getAllCategories();
+  if (allCats.some(c => c.toLowerCase() === val.toLowerCase())) {
+    showToast(`La categoría "${val}" ya existe`, "warning");
+    return;
+  }
+  MASTER_ASANA_CATEGORIES.push(val);
+  if (input) input.value = "";
+  renderCategoriesManagerList();
+  updateCategoryControls();
+  showToast(`Categoría "${val}" agregada`, "success");
+};
+
+window.renameCategoryAction = async function(oldCat) {
+  const newCat = prompt(`Ingresa el nuevo nombre para "${oldCat}":`, oldCat);
+  if (!newCat || newCat.trim() === "" || newCat.trim() === oldCat) return;
+  const target = newCat.trim();
+
+  let modifiedCount = 0;
+  (appData.proveedores || []).forEach(p => {
+    if ((p.Rubro_General || "").trim().toLowerCase() === oldCat.toLowerCase()) {
+      p.Rubro_General = target;
+      modifiedCount++;
+    }
+  });
+  (appData.catalogo || []).forEach(c => {
+    if ((c.Categoria || "").trim().toLowerCase() === oldCat.toLowerCase()) {
+      c.Categoria = target;
+      modifiedCount++;
+    }
+  });
+  (appData.tareas || []).forEach(t => {
+    if ((t.Categoria_Logistica || "").trim().toLowerCase() === oldCat.toLowerCase()) {
+      t.Categoria_Logistica = target;
+      modifiedCount++;
+    }
+  });
+  (appData.escenarios_rows || []).forEach(r => {
+    if ((r.Categoria || "").trim().toLowerCase() === oldCat.toLowerCase()) {
+      r.Categoria = target;
+    }
+  });
+
+  const idx = MASTER_ASANA_CATEGORIES.findIndex(c => c.toLowerCase() === oldCat.toLowerCase());
+  if (idx !== -1) MASTER_ASANA_CATEGORIES[idx] = target;
+  else MASTER_ASANA_CATEGORIES.push(target);
+
+  syncAppDataToLocalStorage();
+  renderCategoriesManagerList();
+  updateCategoryControls();
+  renderProviders();
+  renderTasksTab();
+  showToast(`Categoría renombrada a "${target}" (${modifiedCount} actualizados)`, "success");
+
+  await postDirectToGAS("rename_category", "renameData", { oldName: oldCat, newName: target });
+};
+
+window.deleteCategoryAction = function(cat, totalUsage) {
+  if (totalUsage > 0) {
+    if (!confirm(`La categoría "${cat}" tiene ${totalUsage} registros vinculados. Si la eliminas, esos registros pasarán a "Logística". ¿Deseas continuar?`)) return;
+    (appData.proveedores || []).forEach(p => {
+      if ((p.Rubro_General || "").trim().toLowerCase() === cat.toLowerCase()) p.Rubro_General = "Logística";
+    });
+    (appData.catalogo || []).forEach(c => {
+      if ((c.Categoria || "").trim().toLowerCase() === cat.toLowerCase()) c.Categoria = "Logística";
+    });
+    (appData.tareas || []).forEach(t => {
+      if ((t.Categoria_Logistica || "").trim().toLowerCase() === cat.toLowerCase()) t.Categoria_Logistica = "Logística";
+    });
+    (appData.escenarios_rows || []).forEach(r => {
+      if ((r.Categoria || "").trim().toLowerCase() === cat.toLowerCase()) r.Categoria = "Logística";
+    });
+  } else {
+    if (!confirm(`¿Eliminar la categoría "${cat}"?`)) return;
+  }
+
+  const idx = MASTER_ASANA_CATEGORIES.findIndex(c => c.toLowerCase() === cat.toLowerCase());
+  if (idx !== -1) MASTER_ASANA_CATEGORIES.splice(idx, 1);
+
+  syncAppDataToLocalStorage();
+  renderCategoriesManagerList();
+  updateCategoryControls();
+  renderProviders();
+  renderTasksTab();
+  showToast(`Categoría "${cat}" eliminada`, "info");
+};
+
+window.triggerAsanaNormalization = async function() {
+  if (!confirm("¿Deseas normalizar automáticamente todos los proveedores, catálogo y tareas a los 4 Pilares Maestros de Asana (Comida, Decoración, Vestimenta, Logística)?")) return;
+
+  let changes = 0;
+  function norm(str) {
+    if (!str) return "Logística";
+    const clean = str.trim().toLowerCase();
+    if (ASANA_CATEGORY_SYNONYMS[clean]) return ASANA_CATEGORY_SYNONYMS[clean];
+    for (const [key, val] of Object.entries(ASANA_CATEGORY_SYNONYMS)) {
+      if (clean.includes(key)) return val;
+    }
+    return "Logística";
+  }
+
+  (appData.proveedores || []).forEach(p => {
+    const prev = p.Rubro_General;
+    p.Rubro_General = norm(prev);
+    if (prev !== p.Rubro_General) changes++;
+  });
+  (appData.catalogo || []).forEach(c => {
+    const prev = c.Categoria;
+    c.Categoria = norm(prev);
+    if (prev !== c.Categoria) changes++;
+  });
+  (appData.tareas || []).forEach(t => {
+    const prev = t.Categoria_Logistica;
+    t.Categoria_Logistica = norm(prev);
+    if (prev !== t.Categoria_Logistica) changes++;
+  });
+  (appData.escenarios_rows || []).forEach(r => {
+    const prev = r.Categoria;
+    r.Categoria = norm(prev);
+  });
+
+  syncAppDataToLocalStorage();
+  renderCategoriesManagerList();
+  updateCategoryControls();
+  renderProviders();
+  renderTasksTab();
+  showToast(`✨ ¡Normalización completada! ${changes} registros actualizados a los 4 pilares Asana.`, "success");
+
+  await postDirectToGAS("normalize_categories", null, null);
+};
+
 function applyConfigToHeader() {
   const cfg = appData.config || {};
   const wedDateInp = document.getElementById("weddingDateInput");
@@ -1003,7 +1263,7 @@ function debouncedSaveConfig() {
   }, 600);
 }
 
-// Sincronizar BCV API
+// Sincronizar Tasas (Dólar BCV, Euro BCV, Binance)
 async function syncBcvRates() {
   const btn = document.getElementById("btnSyncBcv");
   if (btn) {
@@ -1011,23 +1271,86 @@ async function syncBcvRates() {
     btn.disabled = true;
   }
 
+  let usdFound = 0;
+  let eurFound = 0;
+  let binanceFound = 0;
+
   try {
-    const res = await fetchWithTimeout("https://ve.dolarapi.com/v1/dolares/oficial", {}, 6000);
-    const json = await res.json();
-    if (json && json.promedio) {
-      appData.config.Tasa_USD_BCV = parseFloat(json.promedio).toFixed(2);
+    // 1. Si hay conexión a Google Apps Script, usar el backend scraper (sin bloqueos CORS)
+    if (cloudConfig && cloudConfig.google_sheets_url && cloudConfig.google_sheets_url.startsWith("http")) {
+      try {
+        const gasUrl = cloudConfig.google_sheets_url + (cloudConfig.google_sheets_url.includes("?") ? "&" : "?") + "action=sync_bcv_rates";
+        const gasRes = await fetchWithTimeout(gasUrl, {}, 8000);
+        if (gasRes.ok) {
+          const gasData = await gasRes.json();
+          if (gasData && gasData.success && gasData.rates) {
+            usdFound = parseFloat(gasData.rates.Tasa_USD_BCV) || 0;
+            eurFound = parseFloat(gasData.rates.Tasa_EUR_BCV) || 0;
+            binanceFound = parseFloat(gasData.rates.Tasa_Binance) || 0;
+          }
+        }
+      } catch (gasErr) {
+        console.warn("GAS scraper rate fetch failed, using direct API fallbacks:", gasErr);
+      }
+    }
+
+    // 2. Fallbacks directos desde API venezolana oficial
+    if (!usdFound) {
+      try {
+        const resUsd = await fetchWithTimeout("https://ve.dolarapi.com/v1/dolares/oficial", {}, 6000);
+        const jsonUsd = await resUsd.json();
+        if (jsonUsd && jsonUsd.promedio) usdFound = parseFloat(jsonUsd.promedio) || 0;
+      } catch(e1) {}
+    }
+
+    if (!eurFound) {
+      try {
+        const resEur = await fetchWithTimeout("https://ve.dolarapi.com/v1/euros/oficial", {}, 6000);
+        const jsonEur = await resEur.json();
+        if (jsonEur && jsonEur.promedio) eurFound = parseFloat(jsonEur.promedio) || 0;
+      } catch(e2) {}
+    }
+
+    if (!binanceFound) {
+      try {
+        const resBin = await fetchWithTimeout("https://ve.dolarapi.com/v1/dolares/paralelo", {}, 6000);
+        const jsonBin = await resBin.json();
+        if (jsonBin && jsonBin.promedio) binanceFound = parseFloat(jsonBin.promedio) || 0;
+      } catch(e3) {}
+    }
+
+    if (usdFound > 0) {
+      appData.config.Tasa_USD_BCV = parseFloat(usdFound).toFixed(2);
       const inpUsd = document.getElementById("inputRateUsdBcv");
       if (inpUsd) inpUsd.value = appData.config.Tasa_USD_BCV;
-
-      updateSummaryPills();
-      showToast(`Tasa oficial BCV actualizada en línea: USD = ${appData.config.Tasa_USD_BCV} Bs`, "success");
-      renderDashboard();
-      debouncedSaveConfig();
-    } else {
-      showToast("⚠️ Sin conexión directa al BCV. Manteniendo tasa manual actual por seguridad", "warning");
     }
+
+    if (eurFound > 0) {
+      appData.config.Tasa_EUR_BCV = parseFloat(eurFound).toFixed(2);
+      const inpEur = document.getElementById("inputRateEurBcv");
+      if (inpEur) inpEur.value = appData.config.Tasa_EUR_BCV;
+    }
+
+    if (binanceFound > 0) {
+      // Retener ediciones previas si no difiere demasiado o aplicar si está en 0
+      appData.config.Tasa_Binance = parseFloat(binanceFound).toFixed(2);
+      appData.config.Tasa_Efectivo_USDT = appData.config.Tasa_Binance;
+      const inpUsdt = document.getElementById("inputRateUsdt");
+      if (inpUsdt) inpUsdt.value = appData.config.Tasa_Binance;
+    }
+
+    updateSummaryPills();
+    renderDashboard();
+    debouncedSaveConfig();
+
+    if (usdFound > 0 || eurFound > 0) {
+      showToast(`Tasas actualizadas: USD BCV = ${appData.config.Tasa_USD_BCV} Bs | EUR BCV = ${appData.config.Tasa_EUR_BCV} Bs | Binance = ${appData.config.Tasa_Binance} Bs`, "success");
+    } else {
+      showToast("⚠️ Sin conexión a servidores cambiarios. Manteniendo tasas actuales.", "warning");
+    }
+
   } catch (err) {
-    showToast("⚠️ Sin conexión directa al BCV. Manteniendo tasa manual actual por seguridad", "warning");
+    showToast("⚠️ No se pudo consultar la tasa cambiaria. Manteniendo valores guardados.", "warning");
   } finally {
     if (btn) {
       btn.innerHTML = `<span>🌐</span> Sincronizar BCV`;
@@ -1323,30 +1646,28 @@ async function triggerCloudSyncHeader() {
   }
 }
 
-// Helper: Calculate item costs in client
+// Helper: Calculate item costs in client (Motor de 3 Tasas y Paridad Oficial)
 function calcItemCosts(tipoCobro, cant, precio, moneda, forma, inv) {
   precio = parseFloat(precio) || 0;
   cant = parseFloat(cant) || 1;
-  inv = parseFloat(inv) || parseFloat(appData.config.Invitados_Base) || 100;
-  const bcvUsd = parseFloat(appData.config.Tasa_USD_BCV) || 45.5;
-  const bcvEur = parseFloat(appData.config.Tasa_EUR_BCV) || 49.8;
-  const usdt = parseFloat(appData.config.Tasa_Efectivo_USDT) || 54.0;
+  inv = parseFloat(inv) || parseFloat(appData.config?.Invitados_Base) || 100;
+  const bcvUsd = parseFloat(appData.config?.Tasa_USD_BCV) || 45.5;
+  const bcvEur = parseFloat(appData.config?.Tasa_EUR_BCV) || 49.8;
+  const usdt = parseFloat(appData.config?.Tasa_Binance || appData.config?.Tasa_Efectivo_USDT) || 54.0;
 
-  let mult = 1.0;
-  if (tipoCobro === "Por Invitado") mult = inv;
-  else if (tipoCobro === "Por Unidad") mult = cant;
+  let mult = (tipoCobro === "Por Invitado") ? (inv * (cant || 1)) : (cant || 1);
 
   let cNom = 0, cReal = 0, cVes = 0;
 
-  if ((moneda === "USD" && (forma === "Bs a tasa BCV" || forma === "Bs a tasa Dólar BCV")) || forma === "Bs a tasa Dólar BCV") {
+  if ((moneda === "USD" && (forma === "Bs a tasa BCV" || forma === "Bs a tasa Dólar BCV" || forma === "Dólar BCV" || forma === "Transferencia BCV")) || forma === "Bs a tasa Dólar BCV") {
     cVes = precio * mult * bcvUsd;
     cNom = precio * mult;
     cReal = usdt > 0 ? cVes / usdt : cNom;
-  } else if ((moneda === "EUR" && (forma === "Bs a tasa BCV" || forma === "Bs a tasa Euro BCV")) || forma === "Bs a tasa Euro BCV") {
+  } else if ((moneda === "EUR" && (forma === "Bs a tasa BCV" || forma === "Bs a tasa Euro BCV" || forma === "Euro BCV")) || forma === "Bs a tasa Euro BCV") {
     cVes = precio * mult * bcvEur;
-    cNom = bcvUsd > 0 ? cVes / bcvUsd : 0;
-    cReal = usdt > 0 ? cVes / usdt : 0;
-  } else if (forma === "USD Efectivo (Billetes)" || forma === "USDT / Binance") {
+    cNom = bcvUsd > 0 ? cVes / bcvUsd : (precio * mult);
+    cReal = usdt > 0 ? cVes / usdt : cNom;
+  } else if (forma === "USD Efectivo (Billetes)" || forma === "USDT / Binance" || forma === "Binance USDT" || forma === "Efectivo" || forma === "Zelle") {
     if (moneda === "USD") {
       cReal = precio * mult;
       cNom = cReal;
@@ -1366,14 +1687,15 @@ function calcItemCosts(tipoCobro, cant, precio, moneda, forma, inv) {
     cReal = usdt > 0 ? cVes / usdt : 0;
   } else {
     cNom = precio * mult;
-    cReal = cNom;
-    cVes = cReal * bcvUsd;
+    cVes = cNom * bcvUsd;
+    cReal = usdt > 0 ? cVes / usdt : cNom;
   }
 
   const cEur = bcvEur > 0 ? cVes / bcvEur : 0;
   return {
     cNom: Math.round(cNom * 100) / 100,
     cReal: Math.round(cReal * 100) / 100,
+    cBinance: Math.round(cReal * 100) / 100,
     cVes: Math.round(cVes * 100) / 100,
     cEur: Math.round(cEur * 100) / 100
   };
@@ -1401,10 +1723,11 @@ function renderDashboard() {
 
   scenarioRows.forEach(row => {
     const item = appData.catalogo.find(c => c.ID_Item === row.ID_Item) || row;
+    const rowQty = parseFloat(row.Cantidad_Escenario || row.Cantidad_Unidades || item.Cantidad_Unidades || 1) || 1;
     const costs = calcItemCosts(
       item.Tipo_Cobro || row.Tipo_Cobro,
-      item.Cantidad_Unidades || row.Cantidad_Unidades,
-      item.Precio_Unitario_Cotizado || row.Precio_Unitario_Cotizado,
+      rowQty,
+      item.Precio_Unitario_Cotizado || row.Precio_Unitario_Cotizado || row.Precio_Unitario,
       item.Moneda_Cotizada || row.Moneda_Cotizada,
       item.Forma_Pago_Exigida || row.Forma_Pago_Exigida,
       guests
@@ -1593,7 +1916,7 @@ function renderSmartSuggestions(scenarioRows, guests, totalReal, techo, marginal
           <div class="suggestion-content">
             <div class="suggestion-title">Oportunidad de Ahorro: ${escapeHtml(currentItem.Producto_Comparable)}</div>
             <div class="suggestion-text">
-              Si cambias a <strong>${escapeHtml(currentItem.Nombre_Proveedor)}</strong> por <strong>${escapeHtml(alt.Nombre_Proveedor)}</strong>, ahorras <strong>${formatUSD(ahorro)}</strong> en costo real de bolsillo (-${ahorroPct}% del presupuesto total).
+              Si cambias a <strong>${escapeHtml(currentItem.Nombre_Proveedor)}</strong> por <strong>${escapeHtml(alt.Nombre_Proveedor)}</strong>, ahorras <strong>${formatUSD(ahorro)}</strong> en Costo Binance (-${ahorroPct}% del presupuesto total).
             </div>
           </div>
         `;
@@ -1805,17 +2128,50 @@ function onGuestTableChange(guestId, selectedValue) {
     finalTable = cleanMesaName(finalTable);
   }
 
+  updateGuestInline(guestId, "Mesa_Asignada", finalTable);
+}
+
+// Actualización en línea de invitados con sincronización directa
+async function updateGuestInline(guestId, field, value) {
+  let finalValue = value;
+  if (field === "Mesa_Asignada" && value === "__custom__") {
+    const customName = prompt("Escribe el número o nombre de la nueva mesa (Ej: 26, VIP, Terraza):");
+    if (customName && customName.trim()) {
+      finalValue = cleanMesaName(customName.trim());
+    } else {
+      renderGuestsTab();
+      return;
+    }
+  } else if (field === "Mesa_Asignada") {
+    finalValue = cleanMesaName(finalValue);
+  } else if (field === "Acompanantes_Adicionales") {
+    const n = parseInt(value, 10);
+    finalValue = isNaN(n) ? 0 : Math.max(0, n);
+  }
+
   const guest = (appData.invitados || []).find(g => String(g.ID_Invitado || "").trim() === String(guestId || "").trim());
   if (!guest) return;
 
-  guest.Mesa_Asignada = finalTable;
-  syncAppDataToLocalStorage();
-  renderGuestsTab();
-  showToast(`Mesa actualizada: ${finalTable || "Sin asignar"}`, "success");
+  guest[field] = finalValue;
+  if (field === "Nombre_Completo") guest.Nombre_Comp = finalValue;
+  if (field === "Estado_Confirmacion") guest.Estado_Confirm = finalValue;
+  if (field === "Restricciones_Alimentarias") guest.Restricciones_ = finalValue;
+  if (field === "Acompanantes_Adicionales") guest.Acompanantes = finalValue;
 
-  // Persistir en segundo plano directamente en Google Sheets
-  postDirectToGAS("save_guest", "guest", guest);
+  syncAppDataToLocalStorage();
+
+  if (field === "Estado_Confirmacion" || field === "Acompanantes_Adicionales") {
+    renderDashboard();
+    updateSummaryPills();
+  }
+  if (field === "Mesa_Asignada" && isTableGroupedView) {
+    renderGuestsTab();
+  }
+
+  showToast("Dato de invitado guardado", "success", 1100);
+  await postDirectToGAS("save_guest", "guest", guest);
 }
+window.updateGuestInline = updateGuestInline;
 
 function toggleGuestGroupTables() {
   isTableGroupedView = !isTableGroupedView;
@@ -1963,35 +2319,51 @@ function renderGuestsContent(list) {
           <div style="display:flex; flex-direction:column; gap:8px;">
       `;
 
+      const rolOptions = ["Familia Novio", "Familia Novia", "Amigos Novio", "Amigos Novia", "Cortejo Novio", "Cortejo Novia", "Padrinos", "Proveedor / Staff", "Invitado"];
+      const stOptions = ["Confirmado", "Pendiente", "Declinado"];
+
       guestsInTable.forEach(inv => {
-        const nombreFinal = String(inv.Nombre_Comp || inv.Nombre_Completo || "Sin Nombre").trim();
+        const nombreFinal = String(inv.Nombre_Comp || inv.Nombre_Completo || "").trim();
         const acompNum = parseInt(inv.Acompanantes !== undefined ? inv.Acompanantes : inv.Acompanantes_Adicionales, 10) || 0;
         const dietFinal = String(inv.Restricciones_ || inv.Restricciones_Alimentarias || "").trim();
+        const currentRol = inv.Rol_Cortejo || "Familia Novio";
+        const currentSt = String(inv.Estado_Confirm || inv.Estado_Confirmacion || "Pendiente").trim();
         const guestPhotoUrl = getPhotoUrl(inv.Ruta_Foto);
         const thumbHtml = guestPhotoUrl ? `
           <img src="${escapeHtml(guestPhotoUrl)}" alt="Foto" class="table-guest-thumb thumbnail-clickable"
                onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')"
                onerror="this.style.display='none';" />
-        ` : "";
+        ` : `<span style="font-size:20px; line-height:1;">👤</span>`;
 
         groupHtml += `
-          <div class="table-guest-item">
-            <div class="table-guest-info">
+          <div class="table-guest-item" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:10px; background:#FFFFFF; border:1px solid #E5E5EA; border-radius:10px; margin-bottom:6px;">
+            <div style="display:flex; align-items:center; gap:8px; flex:1 1 220px; min-width:0;">
               ${thumbHtml}
-              <div style="min-width:0;">
-                <div style="font-weight:700; font-size:13px; color:#1D1D1F; cursor:pointer;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')">${escapeHtml(nombreFinal)}</div>
-                <div style="font-size:11px; color:var(--text-secondary); display:flex; gap:6px; flex-wrap:wrap; margin-top:2px;">
-                  <span>${escapeHtml(inv.Rol_Cortejo || 'Invitado')}</span>
-                  ${acompNum > 0 ? `<span style="font-weight:600; color:#1D1D1F;">(+${acompNum})</span>` : ''}
-                  ${dietFinal && dietFinal.toLowerCase() !== 'ninguna' ? `<span style="background:#E1F5FE; color:#0288D1; padding:1px 6px; border-radius:8px;">🥗 ${escapeHtml(dietFinal)}</span>` : ''}
+              <div style="flex:1; min-width:0;">
+                <input type="text" class="inline-table-input" value="${escapeHtml(nombreFinal)}" style="font-weight:700; font-size:13px; color:#1D1D1F;"
+                       onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Nombre_Completo', this.value)" placeholder="Nombre del invitado" />
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; align-items:center;">
+                  <select class="inline-table-select" style="font-size:11px; padding:2px 4px;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Rol_Cortejo', this.value)">
+                    ${rolOptions.map(r => `<option value="${escapeHtml(r)}" ${r === currentRol ? "selected" : ""}>${escapeHtml(r)}</option>`).join("")}
+                  </select>
+                  <select class="inline-table-select" style="font-size:11px; padding:2px 4px; font-weight:700;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Estado_Confirmacion', this.value)">
+                    ${stOptions.map(s => `<option value="${s}" ${s === currentSt ? "selected" : ""}>${s}</option>`).join("")}
+                  </select>
+                  <span style="font-size:11px; color:var(--text-secondary);">+1:</span>
+                  <input type="number" min="0" max="15" class="inline-table-input-sm" value="${acompNum}" style="width:42px; font-size:11px; padding:2px 4px; text-align:center;"
+                         onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Acompanantes_Adicionales', this.value)" title="Acompañantes adicionales" />
+                  <input type="text" class="inline-table-input" value="${escapeHtml(dietFinal)}" placeholder="Dieta..." style="width:95px; font-size:11px; padding:2px 4px;"
+                         onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Restricciones_Alimentarias', this.value)" />
                 </div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-              <select class="inline-table-select" style="max-width:130px; font-size:11px; padding:3px 6px;" onchange="onGuestTableChange('${escapeHtml(inv.ID_Invitado)}', this.value)" title="Mover de mesa">
+              <select class="inline-table-select" style="max-width:115px; font-size:11.5px; padding:3px 6px;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Mesa_Asignada', this.value)" title="Mover de mesa">
                 ${getTableOptionsHtml(inv.Mesa_Asignada || "")}
               </select>
-              <button class="btn btn-secondary" style="padding:2px 6px; font-size:11px;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')" title="Ver ficha">🔍</button>
+              <button class="btn btn-secondary mini-btn-icon" style="padding:4px 7px; font-size:11px;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')" title="Ver ficha completa">🔍</button>
+              <button class="btn btn-secondary mini-btn-icon" style="padding:4px 7px; font-size:11px;" onclick="editGuest('${escapeHtml(inv.ID_Invitado)}')" title="Editar modal">✏️</button>
+              <button class="btn btn-danger mini-btn-icon" style="padding:4px 7px; font-size:11px;" onclick="deleteGuestAction('${escapeHtml(inv.ID_Invitado)}', '${escapeHtml(nombreFinal)}')" title="Borrar">🗑️</button>
             </div>
           </div>
         `;
@@ -2016,7 +2388,7 @@ function renderGuestsContent(list) {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align:center; padding:36px; color:var(--text-secondary);">
+        <td colspan="10" style="text-align:center; padding:36px; color:var(--text-secondary);">
           ${list.length === 0 ? "No hay invitados registrados todavía. Haz clic en <strong>+ Nuevo Invitado</strong> para comenzar." : "No se encontraron invitados con los filtros seleccionados."}
         </td>
       </tr>
@@ -2024,81 +2396,91 @@ function renderGuestsContent(list) {
     return;
   }
 
+  const rolOptions = ["Familia Novio", "Familia Novia", "Amigos Novio", "Amigos Novia", "Cortejo Novio", "Cortejo Novia", "Padrinos", "Proveedor / Staff", "Invitado"];
+  const stOptions = ["Confirmado", "Pendiente", "Declinado"];
+
   filtered.forEach(inv => {
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid rgba(0,0,0,0.06)";
 
-    // WhatsApp link con manejo seguro garantizado de teléfono
-    let phoneHtml = `<span style="color:var(--text-secondary);">Sin teléfono</span>`;
-    const tel = inv.Telefono !== undefined && inv.Telefono !== null ? String(inv.Telefono).trim() : "";
-    if (tel) {
-      let digits = tel.replace(/\D/g, "");
-      if (digits.startsWith("0")) digits = "58" + digits.slice(1);
-      else if (!digits.startsWith("58") && digits.length === 10) digits = "58" + digits;
-      phoneHtml = `
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span>${escapeHtml(tel)}</span>
-          <a href="https://wa.me/${digits}" target="_blank" class="btn btn-secondary" style="padding:2px 8px; font-size:11px; border-radius:12px; color:#128C7E;" title="Enviar WhatsApp">
-            💬 WhatsApp
-          </a>
-        </div>
-      `;
-    }
-
-    // Status badge
-    let statusClass = "badge-status-pending";
-    const st = String(inv.Estado_Confirm || inv.Estado_Confirmacion || "Pendiente").trim();
-    if (st === "Confirmado") statusClass = "badge-status-confirmed";
-    else if (st === "Declinado") statusClass = "badge-status-declined";
-
+    const nombreFinal = String(inv.Nombre_Comp || inv.Nombre_Completo || "").trim();
+    const currentRol = inv.Rol_Cortejo || "Familia Novio";
+    const currentSt = String(inv.Estado_Confirm || inv.Estado_Confirmacion || "Pendiente").trim();
     const acompNum = parseInt(inv.Acompanantes !== undefined ? inv.Acompanantes : inv.Acompanantes_Adicionales, 10) || 0;
-    const acompText = acompNum > 0 ? `+${acompNum} (${1 + acompNum} pers.)` : `<span style="color:var(--text-secondary);">Solo</span>`;
-
     const rawDiet = String(inv.Restricciones_ || inv.Restricciones_Alimentarias || "").trim();
-    const dietText = (rawDiet && rawDiet.toLowerCase() !== "ninguna")
-      ? `<span style="background:#E1F5FE; color:#0288D1; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600;">${escapeHtml(rawDiet)}</span>`
-      : `<span style="color:var(--text-secondary); font-size:12px;">Estándar</span>`;
-
-    const nombreFinal = String(inv.Nombre_Comp || inv.Nombre_Completo || "Sin Nombre").trim();
-    const rolFinal = String(inv.Rol_Cortejo || "Familia Novio").trim();
     const notasFinal = String(inv.Notas || "").trim();
+
+    // WhatsApp link con manejo seguro garantizado de teléfono
+    const tel = inv.Telefono !== undefined && inv.Telefono !== null ? String(inv.Telefono).trim() : "";
+    let digits = tel.replace(/\D/g, "");
+    if (digits.startsWith("0")) digits = "58" + digits.slice(1);
+    else if (!digits.startsWith("58") && digits.length === 10) digits = "58" + digits;
+
+    const waBtn = digits ? `
+      <a href="https://wa.me/${digits}" target="_blank" class="btn btn-secondary" style="padding:2px 6px; font-size:11px; border-radius:8px; color:#128C7E; text-decoration:none;" title="Enviar WhatsApp">
+        💬
+      </a>
+    ` : "";
 
     const guestPhotoUrl = getPhotoUrl(inv.Ruta_Foto);
     const guestThumbHtml = guestPhotoUrl ? `
-      <img src="${escapeHtml(guestPhotoUrl)}" alt="Foto" class="thumbnail-clickable" style="width:36px; height:36px; object-fit:cover; border-radius:8px; border:1px solid #E5E5EA; flex-shrink:0; cursor:pointer;"
+      <img src="${escapeHtml(guestPhotoUrl)}" alt="Foto" class="thumbnail-clickable" style="width:34px; height:34px; object-fit:cover; border-radius:8px; border:1px solid #E5E5EA; cursor:pointer;"
            onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')" title="Ver ficha completa"
            onerror="this.style.display='none';" />
-    ` : "";
+    ` : `<span style="font-size:18px; color:#CCC;">👤</span>`;
+
+    let rolSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:115px;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Rol_Cortejo', this.value)">`;
+    rolOptions.forEach(r => {
+      rolSelectHtml += `<option value="${escapeHtml(r)}" ${r === currentRol ? "selected" : ""}>${escapeHtml(r)}</option>`;
+    });
+    if (!rolOptions.includes(currentRol) && currentRol) {
+      rolSelectHtml += `<option value="${escapeHtml(currentRol)}" selected>${escapeHtml(currentRol)}</option>`;
+    }
+    rolSelectHtml += `</select>`;
+
+    let stSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:95px; font-weight:700;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Estado_Confirmacion', this.value)">`;
+    stOptions.forEach(s => {
+      stSelectHtml += `<option value="${s}" ${s === currentSt ? "selected" : ""}>${s}</option>`;
+    });
+    stSelectHtml += `</select>`;
 
     tr.innerHTML = `
-      <td style="padding:12px 14px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          ${guestThumbHtml}
-          <div>
-            <strong style="color:#1D1D1F; font-size:13.5px; cursor:pointer;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')">${escapeHtml(nombreFinal)}</strong>
-            ${notasFinal ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${escapeHtml(notasFinal)}</div>` : ""}
-          </div>
+      <td style="padding:8px 10px; text-align:center;">${guestThumbHtml}</td>
+      <td style="padding:8px 10px;">
+        <input type="text" class="inline-table-input" value="${escapeHtml(nombreFinal)}" style="font-weight:700; font-size:13px; color:#1D1D1F;"
+               onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Nombre_Completo', this.value)" placeholder="Nombre del invitado" />
+      </td>
+      <td style="padding:8px 10px;">
+        <div style="display:flex; align-items:center; gap:4px;">
+          <input type="text" class="inline-table-input" value="${escapeHtml(tel)}" style="font-size:12px; min-width:95px;"
+                 onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Telefono', this.value)" placeholder="0414..." />
+          ${waBtn}
         </div>
       </td>
-      <td style="padding:12px 14px;">
-        <span class="badge-role">${escapeHtml(rolFinal)}</span>
+      <td style="padding:8px 10px;">${rolSelectHtml}</td>
+      <td style="padding:8px 10px; text-align:center;">${stSelectHtml}</td>
+      <td style="padding:8px 10px; text-align:center;">
+        <input type="number" min="0" max="20" class="inline-table-input-sm" value="${acompNum}" style="width:48px; text-align:center; font-weight:700;"
+               onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Acompanantes_Adicionales', this.value)" />
       </td>
-      <td style="padding:12px 14px; font-size:12.5px;">${phoneHtml}</td>
-      <td style="padding:12px 14px; text-align:center;">
-        <span class="${statusClass}">${escapeHtml(st)}</span>
-      </td>
-      <td style="padding:12px 14px; text-align:center; font-size:12.5px; font-weight:600;">${acompText}</td>
-      <td style="padding:12px 14px;">${dietText}</td>
       <td style="padding:8px 10px;">
-        <select class="inline-table-select" onchange="onGuestTableChange('${escapeHtml(inv.ID_Invitado)}', this.value)">
+        <input type="text" class="inline-table-input" value="${escapeHtml(rawDiet)}" style="font-size:12px;"
+               onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Restricciones_Alimentarias', this.value)" placeholder="Ninguna" />
+      </td>
+      <td style="padding:8px 10px;">
+        <select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; width:100%; min-width:85px;" onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Mesa_Asignada', this.value)">
           ${getTableOptionsHtml(inv.Mesa_Asignada || "")}
         </select>
       </td>
-      <td style="padding:12px 14px; text-align:right;">
-        <div style="display:flex; justify-content:flex-end; gap:6px;">
-          <button class="btn btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')" title="Ver ficha completa">🔍 Ver</button>
-          <button class="btn btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="editGuest('${escapeHtml(inv.ID_Invitado)}')">✏️ Editar</button>
-          <button class="btn btn-danger" style="padding:4px 9px; font-size:11.5px;" onclick="deleteGuestAction('${escapeHtml(inv.ID_Invitado)}', '${escapeHtml(nombreFinal)}')">🗑️</button>
+      <td style="padding:8px 10px;">
+        <input type="text" class="inline-table-input" value="${escapeHtml(notasFinal)}" style="font-size:11.5px; color:#555;"
+               onchange="updateGuestInline('${escapeHtml(inv.ID_Invitado)}', 'Notas', this.value)" placeholder="Notas..." />
+      </td>
+      <td style="padding:8px 10px; text-align:right;">
+        <div style="display:flex; justify-content:flex-end; gap:4px;">
+          <button class="btn btn-secondary mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="openFullDetailModal('guest', '${escapeHtml(inv.ID_Invitado)}')" title="Ver ficha completa">🔍</button>
+          <button class="btn btn-secondary mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="editGuest('${escapeHtml(inv.ID_Invitado)}')" title="Editar modal">✏️</button>
+          <button class="btn btn-danger mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="deleteGuestAction('${escapeHtml(inv.ID_Invitado)}', '${escapeHtml(nombreFinal)}')" title="Eliminar">🗑️</button>
         </div>
       </td>
     `;
@@ -2356,7 +2738,7 @@ function renderTasksTab() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align:center; padding:36px; color:var(--text-secondary);">
+        <td colspan="10" style="text-align:center; padding:36px; color:var(--text-secondary);">
           ${list.length === 0 ? "No hay tareas registradas todavía. Haz clic en <strong>+ Nueva Tarea</strong> para comenzar el plan logístico." : "No se encontraron tareas con los filtros seleccionados."}
         </td>
       </tr>
@@ -2364,80 +2746,113 @@ function renderTasksTab() {
     return;
   }
 
+  const catOptions = getAllCategories();
+  const respOptions = ["Vanessa", "Luis", "Ambos", "Coordinador", "Familiares", "Proveedor"];
+  const prioOptions = ["Alta", "Media", "Baja"];
+  const stTaskOptions = ["Pendiente", "En Progreso", "Completada"];
+
   filtered.forEach(t => {
     const isCompleted = (t.Estado || "Pendiente") === "Completada";
     const tr = document.createElement("tr");
     tr.className = "task-item-row" + (isCompleted ? " completed" : "");
     tr.style.borderBottom = "1px solid rgba(0,0,0,0.06)";
+    tr.setAttribute("data-task-id", t.ID_Tarea);
 
-    // Priority badge
-    let prioClass = "badge-priority-medium";
-    const prio = (t.Prioridad || "Media").trim();
-    if (prio === "Alta") prioClass = "badge-priority-high";
-    else if (prio === "Baja") prioClass = "badge-priority-low";
-
-    // Formato limpio de fecha límite sin horas ni recargo
-    let dateHtml = `<span style="color:var(--text-secondary); font-size:12px;">Sin fecha</span>`;
-    if (t.Fecha_Limite) {
-      const cleanDate = String(t.Fecha_Limite).trim().split("T")[0];
-      const parts = cleanDate.split("-");
-      if (parts.length === 3) {
-        dateHtml = `<span style="font-weight:600; color:#1D1D1F; font-size:12.5px;">${parts[2]}/${parts[1]}/${parts[0]}</span>`;
-      } else {
-        dateHtml = `<span style="font-weight:600; color:#1D1D1F; font-size:12.5px;">${escapeHtml(cleanDate)}</span>`;
-      }
-    }
-
-    // Status badge
-    let statusClass = "badge-status-pending";
-    if (isCompleted) statusClass = "badge-status-confirmed";
-    else if (t.Estado === "En Progreso") statusClass = "badge-role";
+    const cleanDate = t.Fecha_Limite ? String(t.Fecha_Limite).trim().split("T")[0] : "";
+    const currentCat = t.Categoria_Logistica || "Logística";
+    const currentResp = t.Responsable || "Ambos";
+    const currentPrio = t.Prioridad || "Media";
+    const currentTaskSt = t.Estado || "Pendiente";
 
     const taskPhotoUrl = getPhotoUrl(t.Ruta_Foto);
     const taskThumbHtml = taskPhotoUrl ? `
-      <img src="${escapeHtml(taskPhotoUrl)}" alt="Foto Tarea" class="thumbnail-clickable" style="width:36px; height:36px; object-fit:cover; border-radius:8px; border:1px solid #E5E5EA; flex-shrink:0; cursor:pointer;"
+      <img src="${escapeHtml(taskPhotoUrl)}" alt="Foto Tarea" class="thumbnail-clickable" style="width:34px; height:34px; object-fit:cover; border-radius:8px; border:1px solid #E5E5EA; cursor:pointer;"
            onclick="openFullDetailModal('task', '${t.ID_Tarea}')" title="Ver comprobante o foto"
            onerror="this.style.display='none';" />
-    ` : "";
+    ` : `<span style="font-size:18px; color:#CCC;">📋</span>`;
+
+    let catSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:105px;" onchange="updateTaskInline('${t.ID_Tarea}', 'Categoria_Logistica', this.value)">`;
+    catOptions.forEach(c => {
+      catSelectHtml += `<option value="${escapeHtml(c)}" ${c.toLowerCase() === currentCat.toLowerCase() ? "selected" : ""}>${escapeHtml(c)}</option>`;
+    });
+    if (!catOptions.some(c => c.toLowerCase() === currentCat.toLowerCase()) && currentCat) {
+      catSelectHtml += `<option value="${escapeHtml(currentCat)}" selected>${escapeHtml(currentCat)}</option>`;
+    }
+    catSelectHtml += `</select>`;
+
+    let respSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:90px;" onchange="updateTaskInline('${t.ID_Tarea}', 'Responsable', this.value)">`;
+    respOptions.forEach(r => {
+      respSelectHtml += `<option value="${escapeHtml(r)}" ${r === currentResp ? "selected" : ""}>${escapeHtml(r)}</option>`;
+    });
+    if (!respOptions.includes(currentResp) && currentResp) {
+      respSelectHtml += `<option value="${escapeHtml(currentResp)}" selected>${escapeHtml(currentResp)}</option>`;
+    }
+    respSelectHtml += `</select>`;
+
+    let prioSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:75px; font-weight:700;" onchange="updateTaskInline('${t.ID_Tarea}', 'Prioridad', this.value)">`;
+    prioOptions.forEach(p => {
+      prioSelectHtml += `<option value="${p}" ${p === currentPrio ? "selected" : ""}>${p}</option>`;
+    });
+    prioSelectHtml += `</select>`;
+
+    let stTaskSelectHtml = `<select class="inline-table-select" style="font-size:11.5px; padding:3px 6px; min-width:95px; font-weight:700;" onchange="updateTaskInline('${t.ID_Tarea}', 'Estado', this.value)">`;
+    stTaskOptions.forEach(s => {
+      stTaskSelectHtml += `<option value="${s}" ${s === currentTaskSt ? "selected" : ""}>${s}</option>`;
+    });
+    stTaskSelectHtml += `</select>`;
 
     tr.innerHTML = `
-      <td style="padding:12px 14px; text-align:center;">
+      <td style="padding:8px 10px; text-align:center;">
         <input type="checkbox" style="accent-color:var(--pink-primary); width:18px; height:18px; cursor:pointer;"
                ${isCompleted ? "checked" : ""} onchange="toggleTaskStatus('${t.ID_Tarea}', this.checked)" />
       </td>
-      <td style="padding:12px 14px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          ${taskThumbHtml}
-          <div>
-            <span class="task-title-text" style="font-weight:700; color:#1D1D1F; font-size:13.5px; cursor:pointer;" onclick="openFullDetailModal('task', '${t.ID_Tarea}')">${escapeHtml(t.Titulo_Tarea || "Tarea")}</span>
-            ${t.Notas ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${escapeHtml(t.Notas)}</div>` : ""}
-          </div>
-        </div>
+      <td style="padding:8px 10px; text-align:center;">${taskThumbHtml}</td>
+      <td style="padding:8px 10px;">
+        <input type="text" class="inline-table-input" value="${escapeHtml(t.Titulo_Tarea || '')}" style="font-weight:700; font-size:13px; color:#1D1D1F;"
+               onchange="updateTaskInline('${t.ID_Tarea}', 'Titulo_Tarea', this.value)" placeholder="Título de la tarea" />
       </td>
-      <td style="padding:12px 14px;">
-        <span class="cat-badge">${escapeHtml(t.Categoria_Logistica || "General")}</span>
+      <td style="padding:8px 10px;">${catSelectHtml}</td>
+      <td style="padding:8px 10px;">${respSelectHtml}</td>
+      <td style="padding:8px 10px;">
+        <input type="date" class="inline-table-input" value="${cleanDate}" style="font-size:11.5px; padding:3px 5px;"
+               onchange="updateTaskInline('${t.ID_Tarea}', 'Fecha_Limite', this.value)" />
       </td>
-      <td style="padding:12px 14px;">
-        <span class="badge-role">${escapeHtml(t.Responsable || "Ambos")}</span>
+      <td style="padding:8px 10px; text-align:center;">${prioSelectHtml}</td>
+      <td style="padding:8px 10px; text-align:center;">${stTaskSelectHtml}</td>
+      <td style="padding:8px 10px;">
+        <input type="text" class="inline-table-input" value="${escapeHtml(t.Notas || '')}" style="font-size:11.5px; color:#555;"
+               onchange="updateTaskInline('${t.ID_Tarea}', 'Notas', this.value)" placeholder="Notas..." />
       </td>
-      <td style="padding:12px 14px; font-size:12px;">${dateHtml}</td>
-      <td style="padding:12px 14px; text-align:center;">
-        <span class="${prioClass}">${escapeHtml(prio)}</span>
-      </td>
-      <td style="padding:12px 14px; text-align:center;">
-        <span class="${statusClass}">${escapeHtml(t.Estado || "Pendiente")}</span>
-      </td>
-      <td style="padding:12px 14px; text-align:right;">
-        <div style="display:flex; justify-content:flex-end; gap:6px;">
-          <button class="btn btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="openFullDetailModal('task', '${t.ID_Tarea}')" title="Ver ficha completa">🔍 Ver</button>
-          <button class="btn btn-secondary" style="padding:4px 9px; font-size:11.5px;" onclick="editTask('${t.ID_Tarea}')">✏️ Editar</button>
-          <button class="btn btn-danger" style="padding:4px 9px; font-size:11.5px;" onclick="deleteTaskAction('${t.ID_Tarea}', '${escapeHtml(t.Titulo_Tarea || "")}')">🗑️</button>
+      <td style="padding:8px 10px; text-align:right;">
+        <div style="display:flex; justify-content:flex-end; gap:4px;">
+          <button class="btn btn-secondary mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="openFullDetailModal('task', '${t.ID_Tarea}')" title="Ver ficha completa">🔍</button>
+          <button class="btn btn-secondary mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="editTask('${t.ID_Tarea}')" title="Editar">✏️</button>
+          <button class="btn btn-danger mini-btn-icon" style="padding:4px 6px; font-size:11px;" onclick="deleteTaskAction('${t.ID_Tarea}', '${escapeHtml(t.Titulo_Tarea || "")}')" title="Borrar">🗑️</button>
         </div>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+// Edición en línea para tareas de logística con sincronización directa
+async function updateTaskInline(taskId, field, value) {
+  if (!appData.tareas) return;
+  const task = appData.tareas.find(t => String(t.ID_Tarea || "").trim() === String(taskId || "").trim());
+  if (!task) return;
+
+  task[field] = value;
+  syncAppDataToLocalStorage();
+
+  // Si se actualizó el estado, refrescar vista y contadores
+  if (field === "Estado") {
+    renderTasksTab();
+  }
+
+  showToast("Dato de tarea guardado", "success", 1100);
+  await postDirectToGAS("save_task", "task", task);
+}
+window.updateTaskInline = updateTaskInline;
 
 function openNewTaskModal() {
   document.getElementById("modalTaskTitle").textContent = "Nueva Tarea Logística";
@@ -2984,7 +3399,7 @@ async function executeDeleteItem(itemId) {
 // PESTAÑA 3: COMPARADOR DE PRODUCTOS (HASTA 3 EN PARALELO)
 // ==========================================
 
-function populateTripleComparisonSelectors() {
+function populateTripleComparisonSelectors(filterKeyword = "") {
   const selGroup = document.getElementById("selectComparablePreset");
   const slot1 = document.getElementById("compSlot1");
   const slot2 = document.getElementById("compSlot2");
@@ -3016,9 +3431,18 @@ function populateTripleComparisonSelectors() {
     if (prevGroup) selGroup.value = prevGroup;
   }
 
-  // 2. Opciones de productos para los 3 slots
-  const catalog = appData?.catalogo || [];
-  let optionsHtml = `<option value="">-- Seleccionar producto --</option>`;
+  // 2. Opciones de productos para los 3 slots con filtrado rápido por palabra clave
+  const kw = (filterKeyword || document.getElementById("inputCompFilterKeyword")?.value || "").trim().toLowerCase();
+  const catalog = (appData?.catalogo || []).filter(item => {
+    if (!kw) return true;
+    const title = (item.Producto_Comparable || "").toLowerCase();
+    const cat = (item.Categoria || "").toLowerCase();
+    const prov = (item.Nombre_Proveedor || "").toLowerCase();
+    const spec = (item.Detalle_Especificacion || "").toLowerCase();
+    return title.includes(kw) || cat.includes(kw) || prov.includes(kw) || spec.includes(kw);
+  });
+
+  let optionsHtml = `<option value="">-- Seleccionar producto (${catalog.length} disponibles) --</option>`;
   catalog.forEach(item => {
     const prov = (appData?.proveedores || []).find(p => p.ID_Proveedor === item.ID_Proveedor);
     const provName = prov?.Nombre_Proveedor || item.Nombre_Proveedor || "Proveedor";
@@ -3030,7 +3454,7 @@ function populateTripleComparisonSelectors() {
   slot1.innerHTML = optionsHtml;
   slot2.innerHTML = optionsHtml;
   if (slot3) {
-    slot3.innerHTML = `<option value="">-- Ninguno (Solo 2 productos) --</option>` + optionsHtml.replace('<option value="">-- Seleccionar producto --</option>', '');
+    slot3.innerHTML = `<option value="">-- Ninguno (Solo 2 productos) --</option>` + optionsHtml.replace(`<option value="">-- Seleccionar producto (${catalog.length} disponibles) --</option>`, '');
   }
 
   // Restaurar selecciones o aplicar selecciones predeterminadas inteligentes
@@ -3080,6 +3504,15 @@ function applyComparablePreset(groupName) {
   renderTripleComparison();
   showToast(`Cargados ${Math.min(matchingItems.length, 3)} productos del grupo "${groupName}".`, "success");
 }
+window.applyComparablePreset = applyComparablePreset;
+
+window.filterComparatorProducts = function(kw) {
+  populateTripleComparisonSelectors(kw);
+};
+
+window.recalculateComparatorMultipliers = function() {
+  renderTripleComparison();
+};
 
 function renderTripleComparison() {
   const grid = document.getElementById("tripleComparisonGrid");
@@ -3090,9 +3523,13 @@ function renderTripleComparison() {
   const id2 = document.getElementById("compSlot2")?.value || "";
   const id3 = document.getElementById("compSlot3")?.value || "";
 
-  const selectedIds = [id1, id2, id3].filter(Boolean);
+  const selectedSlots = [
+    { id: id1, slotNum: 1 },
+    { id: id2, slotNum: 2 },
+    { id: id3, slotNum: 3 }
+  ].filter(s => s.id);
 
-  if (selectedIds.length === 0) {
+  if (selectedSlots.length === 0) {
     grid.innerHTML = `
       <div style="grid-column:1/-1; text-align:center; padding:44px 20px; color:var(--text-secondary); background:#FAF9FB; border-radius:16px; border:1px dashed #D1D1D6;">
         <div style="font-size:36px; margin-bottom:8px;">⚖️</div>
@@ -3104,14 +3541,17 @@ function renderTripleComparison() {
     return;
   }
 
-  // Resolver y evaluar items
+  // Resolver y evaluar items considerando el multiplicador de cada columna
   const evaluatedItems = [];
-  selectedIds.forEach((id, index) => {
+  selectedSlots.forEach(({ id, slotNum }) => {
     const item = (appData?.catalogo || []).find(c => String(c.ID_Item || '').trim() === String(id).trim());
     if (!item) return;
 
-    const qty = parseFloat(item.Cantidad_Unidades) || 1;
+    const qtyInp = document.getElementById(`compQty${slotNum}`);
+    const userQty = qtyInp ? (parseFloat(qtyInp.value) || 1) : (parseFloat(item.Cantidad_Unidades) || 1);
+    const qty = userQty > 0 ? userQty : 1;
     const price = parseFloat(item.Precio_Unitario_Cotizado) || 0;
+
     const costs = calcItemCosts(
       item.Tipo_Cobro || "Fijo Global",
       qty,
@@ -3129,7 +3569,8 @@ function renderTripleComparison() {
       costs,
       provName,
       prov,
-      slotNum: index + 1
+      slotNum,
+      qty
     });
   });
 
@@ -3143,22 +3584,22 @@ function renderTripleComparison() {
     return;
   }
 
-  // Identificar el de menor costo de bolsillo (si hay 2 o más)
+  // Identificar el de menor Costo Binance (si hay 2 o más)
   const minCost = Math.min(...evaluatedItems.map(x => x.costs.cReal));
   const hasMultiple = evaluatedItems.length >= 2;
 
   let gridHtml = "";
-  evaluatedItems.forEach(({ item, costs, provName, slotNum }) => {
+  evaluatedItems.forEach(({ item, costs, provName, slotNum, qty }) => {
     const isWinner = hasMultiple && costs.cReal === minCost;
     const imgHtml = renderProductThumbnail(item?.Ruta_Foto, item?.Producto_Comparable, "comparison", item?.ID_Item || "");
 
     gridHtml += `
       <div class="triple-comp-card ${isWinner ? 'is-winner' : ''}">
-        ${isWinner ? `<div class="winner-pill">⭐ Mejor Costo Real</div>` : ""}
+        ${isWinner ? `<div class="winner-pill">⭐ Mejor Costo Binance</div>` : ""}
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <span style="font-size:12px; font-weight:800; background:#F2F2F7; color:#1D1D1F; padding:3px 10px; border-radius:8px;">
-            Opción #${slotNum}
+            Opción #${slotNum} (${qty} ${qty === 1 ? 'ud' : 'uds'})
           </span>
           <span class="cat-badge" style="font-size:11px;">${escapeHtml(item.Categoria || "General")}</span>
         </div>
@@ -3177,7 +3618,7 @@ function renderTripleComparison() {
 
         <div style="background:#FAF9FB; border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid rgba(0,0,0,0.06);">
           <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700; margin-bottom:2px;">
-            Costo Real de Bolsillo
+            Costo Binance (USDT)
           </div>
           <div style="font-size:24px; font-weight:900; color:#1D1D1F; letter-spacing:-0.5px;">
             ${formatUSD(costs.cReal)}
@@ -3188,7 +3629,7 @@ function renderTripleComparison() {
         </div>
 
         <div style="background:#FFFFFF; border:1px solid rgba(0,0,0,0.08); border-radius:10px; padding:10px; font-size:12px; line-height:1.7; color:#444; margin-bottom:12px;">
-          <div><strong>Cotización Nominal:</strong> ${formatNumber(item.Precio_Unitario_Cotizado)} ${escapeHtml(item.Moneda_Cotizada || 'USD')}</div>
+          <div><strong>Cotización Nominal:</strong> ${formatNumber(costs.cNom)} ${escapeHtml(item.Moneda_Cotizada || 'USD')}</div>
           <div><strong>Modalidad de Cobro:</strong> ${escapeHtml(item.Tipo_Cobro || 'Fijo Global')}</div>
           <div><strong>Forma de Pago Exigida:</strong> ${escapeHtml(item.Forma_Pago_Exigida || 'No especificada')}</div>
         </div>
@@ -3220,6 +3661,8 @@ function renderTripleComparison() {
       const best = sorted[0];
       const second = sorted[1];
       const diff1 = second.costs.cReal - best.costs.cReal;
+      const diffNom1 = Math.abs(second.costs.cNom - best.costs.cNom);
+      const diffVes1 = Math.abs(second.costs.cVes - best.costs.cVes);
       const diffPct1 = second.costs.cReal > 0 ? ((diff1 / second.costs.cReal) * 100).toFixed(1) : 0;
 
       let analysisHtml = `
@@ -3228,18 +3671,19 @@ function renderTripleComparison() {
           <span style="font-size:15px; font-weight:800; color:#1D1D1F;">Análisis Comparativo & Recomendación</span>
         </div>
         <div style="font-size:13px; color:#333; line-height:1.6;">
-          La opción más económica es <strong>"${escapeHtml(best.item.Producto_Comparable || best.item.Categoria)}"</strong> de <strong>"${escapeHtml(best.provName)}"</strong> con un costo real de <strong>${formatUSD(best.costs.cReal)}</strong>.
+          La opción más económica es <strong>"${escapeHtml(best.item.Producto_Comparable || best.item.Categoria)}"</strong> de <strong>"${escapeHtml(best.provName)}"</strong> con un Costo Binance de <strong>${formatUSD(best.costs.cReal)}</strong>.
           <br />
-          Representa un ahorro directo de <strong>${formatUSD(diff1)} (${diffPct1}%)</strong> en comparación con la opción de "${escapeHtml(second.provName)}" (${formatUSD(second.costs.cReal)}).
+          Representa un ahorro directo de <strong>${formatUSD(diff1)} (${diffPct1}%)</strong> en comparación con la opción de "${escapeHtml(second.provName)}" (${formatUSD(second.costs.cReal)}). Diferencia en bolívares: <strong>${formatVES(diffVes1)}</strong>.
       `;
 
       if (sorted.length === 3) {
         const third = sorted[2];
         const diff2 = third.costs.cReal - best.costs.cReal;
+        const diffVes2 = Math.abs(third.costs.cVes - best.costs.cVes);
         const diffPct2 = third.costs.cReal > 0 ? ((diff2 / third.costs.cReal) * 100).toFixed(1) : 0;
         analysisHtml += `
           <br />
-          Frente a la opción más costosa ("${escapeHtml(third.provName)}" en ${formatUSD(third.costs.cReal)}), el ahorro total asciende a <strong>${formatUSD(diff2)} (${diffPct2}%)</strong>.
+          Frente a la opción más costosa ("${escapeHtml(third.provName)}" en ${formatUSD(third.costs.cReal)}), el ahorro total asciende a <strong>${formatUSD(diff2)} (${diffPct2}%)</strong> (equivalente a ${formatVES(diffVes2)}).
         `;
       }
 
@@ -3303,11 +3747,13 @@ function renderScenarioHistoryTable() {
   uniqueScenarios.forEach(sc => {
     const allRows = appData.escenarios_rows.filter(r => r.ID_Escenario === sc.id);
     const validRows = allRows.filter(r => r.ID_Item && String(r.ID_Item).trim() !== "");
+    const scGuests = parseFloat(allRows[0]?.Invitados_Escenario) || guests;
     let totReal = 0, totVes = 0;
 
     validRows.forEach(r => {
       const item = appData.catalogo.find(c => c.ID_Item === r.ID_Item) || r;
-      const c = calcItemCosts(item.Tipo_Cobro, item.Cantidad_Unidades, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
+      const qty = parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1;
+      const c = calcItemCosts(item.Tipo_Cobro, qty, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, scGuests);
       totReal += c.cReal;
       totVes += c.cVes;
     });
@@ -3326,6 +3772,9 @@ function renderScenarioHistoryTable() {
           ${escapeHtml(sc.name)}
           <span style="font-size:11px; padding:2px 8px; border-radius:8px; background:#F2F2F7; color:#666; font-weight:600;">${escapeHtml(sc.id)}</span>
           ${isCurrentActive ? '<span style="font-size:11px; padding:2px 8px; border-radius:8px; background:#E8F8EE; color:#1B8738; font-weight:700;">Activo</span>' : ''}
+        </div>
+        <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">
+          👥 ${scGuests} invitados • Costo x Invitado: <strong>${formatUSD(scGuests > 0 ? totReal / scGuests : 0)}</strong>
         </div>
       </td>
       <td style="padding:12px 14px; text-align:center;">
@@ -3376,9 +3825,9 @@ function toggleScenarioPreview(scId) {
   const allRows = appData.escenarios_rows.filter(r => r.ID_Escenario === scId);
   const rows = allRows.filter(r => r.ID_Item && String(r.ID_Item).trim() !== "");
   const scName = (allRows[0] && allRows[0].Nombre_Escenario) || scId;
-  const guests = parseFloat(appData.config.Invitados_Base) || 100;
+  const guests = parseFloat(allRows[0]?.Invitados_Escenario) || (parseFloat(appData.config.Invitados_Base) || 100);
 
-  title.innerHTML = `📦 Previsualización de Ítems: <strong>${escapeHtml(scName)}</strong> (${rows.length} productos)`;
+  title.innerHTML = `📦 Previsualización de Ítems: <strong>${escapeHtml(scName)}</strong> (${rows.length} productos • ${guests} invitados)`;
 
   if (rows.length === 0) {
     content.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-secondary); font-size:13px;">Este presupuesto no tiene productos agregados todavía. Pulsa <strong>"✏️ Editar"</strong> para cargarlos en el pop-up.</div>`;
@@ -3391,7 +3840,7 @@ function toggleScenarioPreview(scId) {
             <th style="padding:8px 10px;">Proveedor</th>
             <th style="padding:8px 10px;">Producto / Servicio</th>
             <th style="padding:8px 10px; text-align:center;">Cant.</th>
-            <th style="padding:8px 10px; text-align:right;">Subtotal Real ($)</th>
+            <th style="padding:8px 10px; text-align:right;">Subtotal Binance ($)</th>
             <th style="padding:8px 10px; text-align:right;">Subtotal VES</th>
           </tr>
         </thead>
@@ -3400,7 +3849,8 @@ function toggleScenarioPreview(scId) {
 
     rows.forEach(r => {
       const item = appData.catalogo.find(c => c.ID_Item === r.ID_Item) || r;
-      const c = calcItemCosts(item.Tipo_Cobro, item.Cantidad_Unidades, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
+      const qty = parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1;
+      const c = calcItemCosts(item.Tipo_Cobro, qty, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
       html += `
         <tr style="border-bottom:1px solid rgba(0,0,0,0.04);">
           <td style="padding:7px 10px;"><span class="cat-badge">${escapeHtml(item.Categoria || "General")}</span></td>
@@ -3409,7 +3859,7 @@ function toggleScenarioPreview(scId) {
             <span style="font-weight:600;">${escapeHtml(item.Producto_Comparable || "Producto")}</span>
             ${item.Detalle_Especificacion ? `<span style="color:var(--text-secondary); font-size:11px;"> - ${escapeHtml(item.Detalle_Especificacion)}</span>` : ""}
           </td>
-          <td style="padding:7px 10px; text-align:center; font-weight:700;">${item.Cantidad_Unidades || 1}</td>
+          <td style="padding:7px 10px; text-align:center; font-weight:700;">${qty}</td>
           <td style="padding:7px 10px; text-align:right; font-weight:700;">${formatUSD(c.cReal)}</td>
           <td style="padding:7px 10px; text-align:right; color:var(--text-secondary);">${formatVES(c.cVes)}</td>
         </tr>
@@ -3498,7 +3948,7 @@ function openEditBudgetModal(scId) {
     .filter(r => r.ID_Item && String(r.ID_Item).trim() !== "")
     .map(r => ({
       ID_Item: r.ID_Item,
-      Cantidad_Unidades: parseFloat(r.Cantidad_Unidades) || 1
+      Cantidad_Unidades: parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1
     }));
 
   renderModalInvoiceRows();
@@ -3795,9 +4245,12 @@ async function saveModalBudgetAction() {
           Nombre_Proveedor: provName,
           Detalle_Especificacion: item.Detalle_Especificacion || "",
           Forma_Pago_Exigida: item.Forma_Pago_Exigida || "",
+          Cantidad_Escenario: qty,
           Cantidad_Unidades: qty,
+          Precio_Unitario: parseFloat(item.Precio_Unitario_Cotizado) || 0,
           Subtotal_USD_Nominal: c.cNom,
           Subtotal_USD_Real: c.cReal,
+          Subtotal_USD_Binance: c.cBinance,
           Subtotal_EUR_BCV: c.cEur,
           Subtotal_VES: c.cVes
         });
@@ -3834,6 +4287,7 @@ async function saveModalBudgetAction() {
       Invitados_Escenario: guests,
       items: modalBudgetRows.map(r => ({
         ID_Item: r.ID_Item,
+        Cantidad_Escenario: parseFloat(r.Cantidad_Unidades) || 1,
         Cantidad_Unidades: parseFloat(r.Cantidad_Unidades) || 1
       }))
     });
@@ -3921,7 +4375,7 @@ function openFullDetailModal(type, id) {
       { label: "Tipo de Cobro", val: item.Tipo_Cobro || "Fijo Global" },
       { label: "Precio Cotizado", val: `${formatNumber(item.Precio_Unitario_Cotizado || 0)} ${item.Moneda_Cotizada || 'USD'}` },
       { label: "Forma de Pago", val: item.Forma_Pago_Exigida || "No especificada" },
-      { label: "Costo Real USD", val: formatUSD(costs.cReal) },
+      { label: "Costo Binance (USDT)", val: formatUSD(costs.cReal) },
       { label: "Costo Nominal USD", val: formatUSD(costs.cNom) },
       { label: "Costo Estimado VES", val: formatVES(costs.cVes) }
     ];
@@ -4101,12 +4555,14 @@ function renderSideBySideComparison() {
     const validRows = allRows.filter(r => r.ID_Item && String(r.ID_Item).trim() !== "");
     const name = (allRows[0] && allRows[0].Nombre_Escenario) || id;
 
+    const scGuests = parseFloat(allRows[0]?.Invitados_Escenario) || guests;
     let totReal = 0, totNom = 0, totVes = 0, totEur = 0;
     let cashUsd = 0, usdt = 0, bcvVes = 0, marginal = 0, salonComida = 0;
 
     validRows.forEach(r => {
       const item = appData.catalogo.find(c => c.ID_Item === r.ID_Item) || r;
-      const c = calcItemCosts(item.Tipo_Cobro, item.Cantidad_Unidades, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
+      const qty = parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1;
+      const c = calcItemCosts(item.Tipo_Cobro, qty, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, scGuests);
       totReal += c.cReal;
       totNom += c.cNom;
       totVes += c.cVes;
@@ -4123,7 +4579,7 @@ function renderSideBySideComparison() {
       }
 
       const cat = (item.Categoria || "").toLowerCase();
-      if (cat.includes("espacio") || cat.includes("salón") || cat.includes("alimento") || cat.includes("catering")) {
+      if (cat.includes("espacio") || cat.includes("salón") || cat.includes("alimento") || cat.includes("catering") || cat.includes("comida")) {
         salonComida += c.cReal;
       }
     });
@@ -4131,7 +4587,7 @@ function renderSideBySideComparison() {
     const ahorroBrecha = Math.max(0, totNom - totReal);
     const pctPesados = totReal > 0 ? Math.round((salonComida / totReal) * 100) : 0;
 
-    metricsMap[id] = { id, name, rows: validRows, totReal, totNom, totVes, totEur, cashUsd, usdt, bcvVes, marginal, ahorroBrecha, pctPesados };
+    metricsMap[id] = { id, name, scGuests, rows: validRows, totReal, totNom, totVes, totEur, cashUsd, usdt, bcvVes, marginal, ahorroBrecha, pctPesados };
   });
 
   // Render Difference Analysis Banner and 5 KPIs at top
@@ -4159,11 +4615,11 @@ function renderSideBySideComparison() {
         bannerClass = "cheaper";
         bannerIcon = "🟢";
         bannerTitle = `El Presupuesto B (${escapeHtml(mB.name)}) es -${formatUSD(absDiffUSD)} (-${pct}%) MÁS ECONÓMICO que el Presupuesto A (${escapeHtml(mA.name)})`;
-        bannerSub = `¡Ahorro directo de bolsillo! Te ahorras ${formatVES(absDiffVES)} en bolívares con la Opción B.`;
+        bannerSub = `¡Ahorro directo con Costo Binance! Te ahorras ${formatVES(absDiffVES)} en bolívares con la Opción B.`;
       } else {
         bannerClass = "equal";
         bannerIcon = "⚖️";
-        bannerTitle = `Ambos presupuestos tienen exactamente el mismo costo real de bolsillo: ${formatUSD(mA.totReal)}`;
+        bannerTitle = `Ambos presupuestos tienen exactamente el mismo Costo Binance: ${formatUSD(mA.totReal)}`;
         bannerSub = `La inversión requerida es idéntica en ambas opciones.`;
       }
 
@@ -4186,7 +4642,7 @@ function renderSideBySideComparison() {
         <!-- Mini Comparativa de los 5 KPIs Cara a Cara -->
         <div class="diff-kpis-grid">
           <div class="diff-kpi-card">
-            <div class="diff-kpi-title">Costo Total Real</div>
+            <div class="diff-kpi-title">Costo Binance (USDT)</div>
             <div class="diff-kpi-values">
               <div><strong style="color:#1D1D1F;">${formatUSD(mA.totReal)}</strong> <span style="font-size:10px; color:#888;">(A)</span></div>
               <div style="font-weight:700; color:${diffUSD > 0 ? '#E65100' : '#1B8738'};">${formatUSD(mB.totReal)} <span style="font-size:10px; color:#888;">(B)</span></div>
@@ -4195,8 +4651,8 @@ function renderSideBySideComparison() {
           <div class="diff-kpi-card">
             <div class="diff-kpi-title">Costo x Invitado</div>
             <div class="diff-kpi-values">
-              <div><strong>${formatUSD(guests > 0 ? mA.totReal / guests : 0)}</strong></div>
-              <div><strong>${formatUSD(guests > 0 ? mB.totReal / guests : 0)}</strong></div>
+              <div><strong>${formatUSD(mA.scGuests > 0 ? mA.totReal / mA.scGuests : 0)}</strong></div>
+              <div><strong>${formatUSD(mB.scGuests > 0 ? mB.totReal / mB.scGuests : 0)}</strong></div>
             </div>
           </div>
           <div class="diff-kpi-card">
@@ -4252,9 +4708,10 @@ function renderSideBySideComparison() {
           </select>
         </div>
         ${m ? `
-          <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Costo Total Real</div>
+          <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Costo Binance (USDT)</div>
           <div style="font-size:26px; font-weight:800; color:#1D1D1F; margin:4px 0;">${formatUSD(m.totReal)}</div>
           <div style="font-size:12px; color:var(--text-secondary); font-weight:600;">${formatVES(m.totVes)} | ${formatEUR(m.totEur)}</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">👥 ${m.scGuests} invitados • <strong>${formatUSD(m.scGuests > 0 ? m.totReal / m.scGuests : 0)}</strong> / inv</div>
         ` : `
           <div style="padding:20px 10px; text-align:center; color:var(--text-secondary); font-size:12px;">
             Selecciona un tercer presupuesto en el menú superior para comparar 3 opciones a la vez.
@@ -4274,7 +4731,7 @@ function renderSideBySideComparison() {
         ${m ? `
           <div style="border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:10px; margin-bottom:10px;">
             <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary);">KPI 1: Costo x Invitado</div>
-            <div style="font-size:15px; font-weight:700;">${formatUSD(guests > 0 ? m.totReal / guests : 0)}</div>
+            <div style="font-size:15px; font-weight:700;">${formatUSD(m.scGuests > 0 ? m.totReal / m.scGuests : 0)}</div>
           </div>
           <div style="border-bottom:1px solid rgba(0,0,0,0.06); padding-bottom:10px; margin-bottom:10px;">
             <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-secondary);">KPI 2: 1 Silla Más (Marginal)</div>
@@ -4308,7 +4765,8 @@ function renderSideBySideComparison() {
     if (m) {
       m.rows.forEach(r => {
         const item = appData.catalogo.find(c => c.ID_Item === r.ID_Item) || r;
-        const c = calcItemCosts(item.Tipo_Cobro, item.Cantidad_Unidades, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
+        const qty = parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1;
+        const c = calcItemCosts(item.Tipo_Cobro, qty, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, m.scGuests);
         const itemPhoto = getPhotoUrl(item.Ruta_Foto);
         const itemThumb = itemPhoto ? `
           <img src="${escapeHtml(itemPhoto)}" alt="Foto" class="thumbnail-clickable" style="width:32px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #E5E5EA; flex-shrink:0; cursor:pointer;"
@@ -4322,10 +4780,13 @@ function renderSideBySideComparison() {
               ${itemThumb}
               <div style="min-width:0;">
                 <div style="font-size:12px; font-weight:700; color:#1D1D1F; cursor:pointer;" onclick="openFullDetailModal('product', '${escapeHtml(item.ID_Item)}')">${escapeHtml(item.Producto_Comparable || "Producto")}</div>
-                <div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(item.Nombre_Proveedor || "")} (Cant: ${item.Cantidad_Unidades || 1})</div>
+                <div style="font-size:11px; color:var(--text-secondary);">${escapeHtml(item.Nombre_Proveedor || "")} (Cant: ${qty})</div>
               </div>
             </div>
-            <div style="text-align:right; font-size:12px; font-weight:700; flex-shrink:0;">${formatUSD(c.cReal)}</div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-size:12px; font-weight:700; color:#1D1D1F;">${formatUSD(c.cReal)}</div>
+              <div style="font-size:10px; color:var(--text-secondary);">${formatVES(c.cVes)}</div>
+            </div>
           </div>
         `;
       });
@@ -4355,21 +4816,22 @@ async function exportActiveScenarioPdf() {
   const allRows = appData.escenarios_rows.filter(r => r.ID_Escenario === activeScenarioId);
   const rows = allRows.filter(r => r.ID_Item && String(r.ID_Item).trim() !== "");
   const name = (allRows[0] && allRows[0].Nombre_Escenario) || activeScenarioId;
-  const guests = parseFloat(appData.config.Invitados_Base) || 100;
+  const guests = parseFloat(allRows[0]?.Invitados_Escenario) || (parseFloat(appData.config.Invitados_Base) || 100);
 
   let totReal = 0, totNom = 0, totVes = 0;
   let itemsHtml = "";
 
   rows.forEach(r => {
     const item = appData.catalogo.find(c => c.ID_Item === r.ID_Item) || r;
-    const c = calcItemCosts(item.Tipo_Cobro, item.Cantidad_Unidades, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
+    const qty = parseFloat(r.Cantidad_Escenario !== undefined && r.Cantidad_Escenario !== "" ? r.Cantidad_Escenario : r.Cantidad_Unidades) || 1;
+    const c = calcItemCosts(item.Tipo_Cobro, qty, item.Precio_Unitario_Cotizado, item.Moneda_Cotizada, item.Forma_Pago_Exigida, guests);
     totReal += c.cReal;
     totNom += c.cNom;
     totVes += c.cVes;
 
     itemsHtml += `
       <tr style="border-bottom:1px solid #E5E5EA;">
-        <td style="padding:10px 12px; font-size:13px; font-weight:bold;">${escapeHtml(item.Producto_Comparable || "")}</td>
+        <td style="padding:10px 12px; font-size:13px; font-weight:bold;">${escapeHtml(item.Producto_Comparable || "")} (x${qty})</td>
         <td style="padding:10px 12px; font-size:13px;">${escapeHtml(item.Nombre_Proveedor || "")}</td>
         <td style="padding:10px 12px; font-size:13px;">${escapeHtml(item.Forma_Pago_Exigida || "")}</td>
         <td style="padding:10px 12px; font-size:13px; text-align:right; font-weight:bold;">${formatUSD(c.cReal)}</td>
@@ -4403,13 +4865,13 @@ async function exportActiveScenarioPdf() {
         <div style="text-align:right; font-size:12px; color:#777;">
           <div>Fecha de Boda: <strong>${appData.config.Fecha_Boda || "2027-06-15"}</strong></div>
           <div>Invitados Estimados: <strong>${guests}</strong></div>
-          <div>Tasa BCV: <strong>${appData.config.Tasa_USD_BCV} Bs/$</strong> | USDT: <strong>${appData.config.Tasa_Efectivo_USDT} Bs/$</strong></div>
+          <div>Tasa USD BCV: <strong>${appData.config.Tasa_USD_BCV} Bs/$</strong> | Tasa Binance: <strong>${appData.config.Tasa_Binance || appData.config.Tasa_Efectivo_USDT} Bs/$</strong></div>
         </div>
       </div>
 
       <div class="kpis">
         <div class="kpi-box">
-          <div style="font-size:11px; text-transform:uppercase; color:#777; font-weight:bold;">Total Real de Bolsillo</div>
+          <div style="font-size:11px; text-transform:uppercase; color:#777; font-weight:bold;">Total Costo Binance (USDT)</div>
           <div style="font-size:26px; font-weight:800; color:#1D1D1F;">${formatUSD(totReal)}</div>
         </div>
         <div class="kpi-box">
@@ -4428,7 +4890,7 @@ async function exportActiveScenarioPdf() {
             <th>Producto / Ítem</th>
             <th>Proveedor</th>
             <th>Forma de Pago</th>
-            <th style="text-align:right;">Subtotal Real ($)</th>
+            <th style="text-align:right;">Subtotal Binance ($)</th>
             <th style="text-align:right;">Subtotal (Bs)</th>
           </tr>
         </thead>
@@ -5094,3 +5556,18 @@ window.openNewTaskModal = openNewTaskModal;
 window.cloudConfig = cloudConfig;
 window.appData = appData;
 window.showToast = showToast;
+window.updateGuestInline = updateGuestInline;
+window.updateTaskInline = updateTaskInline;
+window.openCategoriesManagerModal = openCategoriesManagerModal;
+window.renderCategoriesManagerList = renderCategoriesManagerList;
+window.addNewCategoryAction = addNewCategoryAction;
+window.renameCategoryAction = renameCategoryAction;
+window.deleteCategoryAction = deleteCategoryAction;
+window.triggerAsanaNormalization = triggerAsanaNormalization;
+window.filterComparatorProducts = filterComparatorProducts;
+window.recalculateComparatorMultipliers = recalculateComparatorMultipliers;
+window.openTooltipModal = openTooltipModal;
+window.closeTooltipModal = closeTooltipModal;
+window.openManual = openManual;
+window.openEditBudgetModal = openEditBudgetModal;
+window.deleteScenarioById = deleteScenarioById;

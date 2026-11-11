@@ -2128,3 +2128,111 @@ input, select, textarea, .form-input, .form-select, .form-textarea {
   box-shadow: 0 2px 6px rgba(0,0,0,0.18);
   letter-spacing: 0.3px;
 }
+
+/* ==========================================================================
+   VERSION 4.5: EDICIÓN EN LÍNEA, TOOLTIPS INTERACTIVOS Y GESTOR DE CATEGORÍAS
+   ========================================================================== */
+.inline-table-input {
+  background: #FFFFFF;
+  border: 1px solid #D1D1D6;
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 5px 8px;
+  color: #1D1D1F;
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.inline-table-input:focus {
+  border-color: var(--pink-primary);
+  box-shadow: 0 0 0 2px rgba(233, 30, 99, 0.15);
+}
+
+.inline-table-input-sm {
+  max-width: 75px;
+  text-align: center;
+}
+
+/* Tooltip Trigger Icon & Popup */
+.app-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #E5E5EA;
+  color: #48484A;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+  user-select: none;
+  line-height: 1;
+}
+.app-tooltip-trigger:hover,
+.app-tooltip-trigger:active,
+.app-tooltip-trigger.active {
+  background: var(--pink-primary);
+  color: #FFFFFF;
+  transform: scale(1.1);
+}
+
+.app-tooltip-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 9999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.app-tooltip-card {
+  background: #FFFFFF;
+  border-radius: 18px;
+  max-width: 440px;
+  width: 100%;
+  padding: 22px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  position: relative;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.app-tooltip-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1D1D1F;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-tooltip-body {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #3A3A3C;
+}
+
+/* Gestor de Categorías */
+.cat-manager-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 10px;
+  transition: background 0.15s ease;
+}
+.cat-manager-row:hover {
+  background: #FAF9FB;
+}
+.cat-manager-row:last-child {
+  border-bottom: none;
+}
+

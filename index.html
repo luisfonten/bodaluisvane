@@ -124,6 +124,9 @@
       <div class="summary-pill" title="Tasa oficial Euro BCV del día" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
         <span>💶</span> <span id="summaryEurBcv">Euro BCV: 49.80 Bs</span>
       </div>
+      <div class="summary-pill" title="Tasa Binance / USDT del mercado" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
+        <span>🪙</span> <span id="summaryBinance">Tasa Binance: 54.00 Bs</span>
+      </div>
       <div class="summary-pill countdown-pill" id="countdownBadge" title="Días restantes para la boda - Clic para configurar" onclick="window.openConfigModal && window.openConfigModal(false)" style="cursor: pointer;">
         <span>⏳</span> Faltan <span id="countdownDays" class="countdown-days">--</span> d
       </div>
@@ -250,9 +253,9 @@
             <input type="number" step="0.01" id="inputRateEurBcv" class="mini-input" />
           </div>
 
-          <!-- Tasa Efectivo / USDT -->
+          <!-- Tasa Binance -->
           <div class="mini-control">
-            <label class="mini-label" for="inputRateUsdt">Efectivo / USDT (Bs)</label>
+            <label class="mini-label" for="inputRateUsdt">Tasa Binance (Bs./USDT)</label>
             <input type="number" step="0.01" id="inputRateUsdt" class="mini-input" />
           </div>
         </div>
@@ -299,12 +302,18 @@
               <span id="semaforoText">Dentro del Presupuesto Meta</span>
             </div>
             <div style="margin-top:8px;">
-              <span style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:600;">Costo Real de Bolsillo</span>
+              <span style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; font-weight:700;">
+                Costo Binance (USDT)
+                <span class="app-tooltip-trigger" onclick="openTooltipModal('costo_binance')" title="Ver explicación financiera">ⓘ</span>
+              </span>
               <div id="dashTotalUsdReal" class="semaforo-main-total">$0.00</div>
             </div>
           </div>
           <div class="semaforo-sub-totals">
-            <div>Dólar Nominal: <strong id="dashTotalUsdNominal">$0.00</strong></div>
+            <div>
+              Dólar Nominal: <strong id="dashTotalUsdNominal">$0.00</strong>
+              <span class="app-tooltip-trigger" onclick="openTooltipModal('dolar_nominal')" title="Ver explicación">ⓘ</span>
+            </div>
             <div>Bolívares (VES): <strong id="dashTotalVes">Bs 0.00</strong></div>
             <div>Equivalente EUR BCV: <strong id="dashTotalEur">€0.00</strong></div>
             <div id="dashDifferenceNotice" style="margin-top:6px; font-size:13px; font-weight:700; color:#1B8738;">
@@ -335,7 +344,10 @@
         <!-- KPI 1 -->
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-title">Costo por Invitado</span>
+            <span class="kpi-title">
+              Costo por Invitado
+              <span class="app-tooltip-trigger" onclick="openTooltipModal('costo_invitado')" title="Ver explicación">ⓘ</span>
+            </span>
             <span class="kpi-icon" style="background:#FCE4EC; color:var(--pink-primary);">👥</span>
           </div>
           <div class="kpi-val" id="kpi1Val">$0.00</div>
@@ -345,7 +357,10 @@
         <!-- KPI 2 -->
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-title">1 Silla Más (Marginal)</span>
+            <span class="kpi-title">
+              1 Silla Más (Marginal)
+              <span class="app-tooltip-trigger" onclick="openTooltipModal('silla_marginal')" title="Ver explicación">ⓘ</span>
+            </span>
             <span class="kpi-icon" style="background:#E1F5FE; color:var(--blue-primary);">🪑</span>
           </div>
           <div class="kpi-val" id="kpi2Val">$0.00</div>
@@ -355,7 +370,10 @@
         <!-- KPI 3 -->
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-title">Arqueo de Caja</span>
+            <span class="kpi-title">
+              Arqueo de Caja
+              <span class="app-tooltip-trigger" onclick="openTooltipModal('arqueo_caja')" title="Ver explicación">ⓘ</span>
+            </span>
             <span class="kpi-icon" style="background:#FFF8E1; color:#F57F17;">💵</span>
           </div>
           <div class="kpi-val" id="kpi3Val">$0.00</div>
@@ -365,7 +383,10 @@
         <!-- KPI 4 -->
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-title">Ahorro Brecha Dólar/Euro BCV</span>
+            <span class="kpi-title">
+              Ahorro Brecha BCV vs Binance
+              <span class="app-tooltip-trigger" onclick="openTooltipModal('ahorro_brecha')" title="Ver explicación">ⓘ</span>
+            </span>
             <span class="kpi-icon" style="background:#E8F8EE; color:#1B8738;">📉</span>
           </div>
           <div class="kpi-val" id="kpi4Val" style="color:#1B8738;">$0.00</div>
@@ -484,14 +505,16 @@
           <table class="table" id="tableGuests" style="width:100%; border-collapse:collapse;">
             <thead>
               <tr style="background:#F9F9FB; border-bottom:1px solid rgba(0,0,0,0.08);">
-                <th style="padding:12px 14px; text-align:left;">Nombre y Apellido</th>
-                <th style="padding:12px 14px; text-align:left;">Rol / Grupo</th>
-                <th style="padding:12px 14px; text-align:left;">Contacto / WhatsApp</th>
-                <th style="padding:12px 14px; text-align:center;">Estado</th>
-                <th style="padding:12px 14px; text-align:center;">Acompañantes</th>
-                <th style="padding:12px 14px; text-align:left;">Restricciones Alimentarias</th>
-                <th style="padding:12px 14px; text-align:left;">Mesa (Edición Directa)</th>
-                <th style="padding:12px 14px; text-align:right;">Acciones</th>
+                <th style="padding:10px 12px; text-align:center; width:50px;">Foto</th>
+                <th style="padding:10px 12px; text-align:left; min-width:160px;">Nombre Completo</th>
+                <th style="padding:10px 12px; text-align:left; min-width:140px;">Contacto / WhatsApp</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Rol / Cortejo</th>
+                <th style="padding:10px 12px; text-align:center; min-width:120px;">Estado</th>
+                <th style="padding:10px 12px; text-align:center; width:75px;">Acomp.</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Restricciones</th>
+                <th style="padding:10px 12px; text-align:center; min-width:110px;">Mesa</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Notas</th>
+                <th style="padding:10px 12px; text-align:right; min-width:120px;">Acciones</th>
               </tr>
             </thead>
             <tbody id="tbodyGuests">
@@ -589,14 +612,16 @@
           <table class="table" id="tableTasks" style="width:100%; border-collapse:collapse;">
             <thead>
               <tr style="background:#F9F9FB; border-bottom:1px solid rgba(0,0,0,0.08);">
-                <th style="padding:12px 14px; text-align:center; width:45px;">Listo</th>
-                <th style="padding:12px 14px; text-align:left;">Tarea & Descripción</th>
-                <th style="padding:12px 14px; text-align:left;">Categoría</th>
-                <th style="padding:12px 14px; text-align:left;">Responsable</th>
-                <th style="padding:12px 14px; text-align:left;">Fecha Límite</th>
-                <th style="padding:12px 14px; text-align:center;">Prioridad</th>
-                <th style="padding:12px 14px; text-align:center;">Estado</th>
-                <th style="padding:12px 14px; text-align:right;">Acciones</th>
+                <th style="padding:10px 12px; text-align:center; width:45px;">Listo</th>
+                <th style="padding:10px 12px; text-align:center; width:50px;">Foto</th>
+                <th style="padding:10px 12px; text-align:left; min-width:180px;">Tarea & Descripción</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Categoría</th>
+                <th style="padding:10px 12px; text-align:left; min-width:120px;">Responsable</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Fecha Límite</th>
+                <th style="padding:10px 12px; text-align:center; min-width:100px;">Prioridad</th>
+                <th style="padding:10px 12px; text-align:center; min-width:110px;">Estado</th>
+                <th style="padding:10px 12px; text-align:left; min-width:130px;">Notas</th>
+                <th style="padding:10px 12px; text-align:right; min-width:120px;">Acciones</th>
               </tr>
             </thead>
             <tbody id="tbodyTasks">
@@ -618,6 +643,10 @@
           <select id="filterRubro" class="filter-select">
             <option value="">Todos los Rubros / Categorías</option>
           </select>
+
+          <button class="btn btn-secondary" onclick="openCategoriesManagerModal()" title="Gestionar y normalizar categorías maestras">
+            <span>🏷️</span> Gestionar Categorías
+          </button>
 
           <button class="btn btn-primary" onclick="openNewProviderModal()">
             <span>➕</span> Nuevo Proveedor
@@ -665,7 +694,7 @@
                   <th style="padding:12px 14px; text-align:left;">Especificación / Detalle</th>
                   <th style="padding:12px 14px; text-align:left;">Tipo de Cobro</th>
                   <th style="padding:12px 14px; text-align:left;">Precio & Forma de Pago</th>
-                  <th style="padding:12px 14px; text-align:right;">Costo Real ($ / Bs)</th>
+                  <th style="padding:12px 14px; text-align:right;">Costo Binance ($ / Bs)</th>
                   <th style="padding:12px 14px; text-align:center; width:130px;">Acciones</th>
                 </tr>
               </thead>
@@ -689,8 +718,13 @@
             </div>
           </div>
           <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">
-            Enfrenta hasta 3 productos simultáneamente para comparar sus fotografías, costo real de bolsillo en USD y Bolívares (tasa BCV), modalidad de cobro y especificaciones técnicas.
+            Enfrenta hasta 3 productos simultáneamente para comparar sus fotografías, Costo Binance (USDT), equivalente en Bolívares (tasa BCV), modalidad de cobro y especificaciones técnicas.
           </p>
+
+          <!-- Buscador Rápido por Palabra Clave Común -->
+          <div style="margin-bottom:12px;">
+            <input type="text" id="inputCompFilterKeyword" class="search-input" placeholder="🔍 Buscar por palabra común: queso, pasticho, torta, centro de mesa, fotografía..." oninput="filterComparatorProducts(this.value)" style="width:100%; font-size:13.5px;" />
+          </div>
 
           <!-- Acceso Rápido por Grupo Comparable -->
           <div style="background:#FAF9FB; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:12px 14px; margin-bottom:16px;">
@@ -702,22 +736,40 @@
             </select>
           </div>
 
-          <!-- Selectores Individuales de 3 Productos en Paralelo -->
+          <!-- Selectores Individuales de 3 Productos en Paralelo con Multiplicador de Cantidad -->
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:8px;">
-            <div>
-              <label class="form-label" style="font-weight:700; color:#1D1D1F;">1️⃣ Producto Principal:</label>
+            <div style="background:#FFFFFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label class="form-label" style="font-weight:700; color:#1D1D1F; margin:0;">1️⃣ Producto Principal:</label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:11px; font-weight:600; color:#666;">Cant:</span>
+                  <input type="number" id="compQty1" value="1" min="1" step="1" class="form-input" style="width:60px; padding:3px 6px; font-size:12px; text-align:center;" onchange="renderTripleComparison()" />
+                </div>
+              </div>
               <select id="compSlot1" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
                 <!-- Opciones dinámicas -->
               </select>
             </div>
-            <div>
-              <label class="form-label" style="font-weight:700; color:#1D1D1F;">2️⃣ Segundo Producto:</label>
+            <div style="background:#FFFFFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label class="form-label" style="font-weight:700; color:#1D1D1F; margin:0;">2️⃣ Segundo Producto:</label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:11px; font-weight:600; color:#666;">Cant:</span>
+                  <input type="number" id="compQty2" value="1" min="1" step="1" class="form-input" style="width:60px; padding:3px 6px; font-size:12px; text-align:center;" onchange="renderTripleComparison()" />
+                </div>
+              </div>
               <select id="compSlot2" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
                 <!-- Opciones dinámicas -->
               </select>
             </div>
-            <div>
-              <label class="form-label" style="font-weight:700; color:#1D1D1F;">3️⃣ Tercer Producto (Opcional):</label>
+            <div style="background:#FFFFFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label class="form-label" style="font-weight:700; color:#1D1D1F; margin:0;">3️⃣ Tercer Producto:</label>
+                <div style="display:flex; align-items:center; gap:4px;">
+                  <span style="font-size:11px; font-weight:600; color:#666;">Cant:</span>
+                  <input type="number" id="compQty3" value="1" min="1" step="1" class="form-input" style="width:60px; padding:3px 6px; font-size:12px; text-align:center;" onchange="renderTripleComparison()" />
+                </div>
+              </div>
               <select id="compSlot3" class="form-select" style="width:100%; font-size:13.5px;" onchange="renderTripleComparison()">
                 <option value="">-- Ninguno (Solo 2 productos) --</option>
                 <!-- Opciones dinámicas -->
@@ -1001,23 +1053,36 @@
 
   <!-- MODAL POP-UP: CREAR / EDITAR PRESUPUESTO COMPLETO (FACTURA) -->
   <div class="modal-overlay" id="modalBudgetInvoice">
-    <div class="modal-sheet" style="max-width:960px; width:95%; max-height:92vh; display:flex; flex-direction:column; padding:24px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:14px; margin-bottom:16px;">
+    <div class="modal-sheet" style="max-width:980px; width:95%; max-height:94vh; display:flex; flex-direction:column; padding:20px 24px;">
+      
+      <!-- Barra Superior Sticky con Acciones Rápidas (Guardar sin scroll) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:12px; margin-bottom:14px; position:sticky; top:0; background:#FFFFFF; z-index:10;">
         <div>
-          <h2 style="font-size:20px; font-weight:800; margin:0; color:#1D1D1F;" id="modalBudgetTitle">
+          <h2 style="font-size:19px; font-weight:800; margin:0; color:#1D1D1F;" id="modalBudgetTitle">
             ➕ Crear Nuevo Presupuesto
           </h2>
-          <p style="font-size:12px; color:var(--text-secondary); margin:4px 0 0 0;">
-            Define el nombre y agrega libremente los renglones de cotizaciones para este presupuesto.
+          <p style="font-size:11.5px; color:var(--text-secondary); margin:3px 0 0 0;">
+            Define el nombre, cantidad de invitados y agrega renglones de cotizaciones.
           </p>
         </div>
-        <button class="modal-close" onclick="closeModal('modalBudgetInvoice')" style="position:static; margin:0;">&times;</button>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary" onclick="saveModalBudgetAction()" style="background:#D81B60; border-color:#D81B60; font-weight:700; padding:8px 16px; font-size:12.5px;">
+            <span>💾</span> Guardar Presupuesto
+          </button>
+          <button type="button" class="btn btn-blue" onclick="addModalInvoiceRow()" style="padding:8px 14px; font-size:12.5px;">
+            <span>➕</span> Agregar Renglón
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modalBudgetInvoice')" style="padding:8px 14px; font-size:12.5px;">
+            Cancelar
+          </button>
+          <button class="modal-close" onclick="closeModal('modalBudgetInvoice')" style="position:static; margin:0; font-size:22px; width:32px; height:32px;">&times;</button>
+        </div>
       </div>
 
       <input type="hidden" id="modalBudgetId" />
 
       <!-- Form Inputs: Nombre & Invitados -->
-      <div style="display:flex; gap:16px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap;">
+      <div style="display:flex; gap:16px; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap;">
         <div style="flex:3; min-width:260px;">
           <label class="form-label" style="font-weight:700;">Nombre del Presupuesto *</label>
           <input type="text" id="modalBudgetName" class="form-input" placeholder="Ej. Presupuesto 1: Opción Jardín Ensueño" style="font-size:14px; font-weight:600;" />
@@ -1029,9 +1094,12 @@
       </div>
 
       <!-- Resumen Financiero en Vivo dentro del Pop-up -->
-      <div style="display:flex; gap:12px; flex-wrap:wrap; padding:12px 16px; background:#FAFAFC; border-radius:12px; border:1px solid rgba(0,0,0,0.06); align-items:center; margin-bottom:16px;">
+      <div style="display:flex; gap:12px; flex-wrap:wrap; padding:12px 16px; background:#FAFAFC; border-radius:12px; border:1px solid rgba(0,0,0,0.06); align-items:center; margin-bottom:14px;">
         <div style="flex:1; min-width:120px;">
-          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Costo Total Real</div>
+          <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">
+            Costo Total Binance
+            <span class="app-tooltip-trigger" onclick="openTooltipModal('costo_binance')" title="Ver explicación">ⓘ</span>
+          </div>
           <div id="modalKpiReal" style="font-size:19px; font-weight:800; color:#1D1D1F;">$0.00</div>
         </div>
         <div style="flex:1; min-width:120px;">
@@ -1046,15 +1114,10 @@
           <div style="font-size:10px; text-transform:uppercase; color:var(--text-secondary); font-weight:700;">Ahorro Brecha BCV</div>
           <div id="modalKpiAhorro" style="font-size:16px; font-weight:700; color:#1B8738;">$0.00</div>
         </div>
-        <div>
-          <button type="button" class="btn btn-blue mini-btn" onclick="addModalInvoiceRow()">
-            <span>➕</span> Agregar Renglón
-          </button>
-        </div>
       </div>
 
       <!-- Tabla Estilo Factura en el Pop-up -->
-      <div class="table-responsive" style="flex:1; overflow-x:auto !important; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid rgba(0,0,0,0.08); border-radius:12px; min-height:220px; max-height:380px; margin-bottom:16px; width:100%; background:#FFFFFF;">
+      <div class="table-responsive" style="flex:1; overflow-x:auto !important; overflow-y:auto; -webkit-overflow-scrolling:touch; border:1px solid rgba(0,0,0,0.08); border-radius:12px; min-height:220px; max-height:380px; margin-bottom:14px; width:100%; background:#FFFFFF;">
         <table style="width:100%; min-width:760px; border-collapse:collapse; font-size:13px;" id="tableModalInvoice">
           <thead style="background:#F2F2F7; position:sticky; top:0; z-index:2; border-bottom:1px solid rgba(0,0,0,0.1);">
             <tr>
@@ -1063,7 +1126,7 @@
               <th style="padding:9px 10px; text-align:left; min-width:220px;">Producto / Servicio</th>
               <th style="padding:9px 10px; text-align:left; min-width:140px;">Rubro & Cobro</th>
               <th style="padding:9px 10px; text-align:center; width:75px;">Cant.</th>
-              <th style="padding:9px 10px; text-align:right; width:110px;">Subtotal Real ($)</th>
+              <th style="padding:9px 10px; text-align:right; width:110px;">Subtotal Binance ($)</th>
               <th style="padding:9px 10px; text-align:right; width:120px;">Subtotal (VES)</th>
               <th style="padding:9px 10px; text-align:center; width:44px;">Acción</th>
             </tr>
@@ -1074,8 +1137,8 @@
         </table>
       </div>
 
-      <!-- Footer del Pop-up: Botones Guardar y Cancelar Centrados y Apilados -->
-      <div class="modal-actions" style="border-top:1px solid rgba(0,0,0,0.08); padding-top:16px;">
+      <!-- Footer del Pop-up -->
+      <div class="modal-actions" style="border-top:1px solid rgba(0,0,0,0.08); padding-top:12px; margin-top:0;">
         <button type="button" class="btn btn-primary" onclick="saveModalBudgetAction()" style="background:#D81B60; border-color:#D81B60; font-weight:700;">
           <span>💾</span> Guardar Presupuesto
         </button>
@@ -1333,10 +1396,209 @@
       <span>💍 La Boda de Luis y Vane</span> • <span>Planificador Financiero & Logístico</span>
     </div>
     <div class="footer-meta">
-      <span class="version-badge">Versión 4.3 - Noviembre 2026</span> • 
+      <span class="version-badge">Versión 4.5 - Noviembre 2026</span> • 
       <a href="javascript:void(0)" onclick="openManual()" style="color:var(--text-sub); text-decoration:underline; cursor:pointer;">📖 Ver Manual de Uso en PDF</a>
     </div>
   </footer>
+
+  <!-- MODAL FLOTANTE INTERACTIVO: TOOLTIP FINANCIERO -->
+  <div class="modal-overlay" id="modalTooltip" style="z-index:9999999;" onclick="if(event.target === this) closeTooltipModal()">
+    <div class="app-tooltip-card" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="app-tooltip-title" id="tooltipTitle">
+          <span>💡</span> <span>Explicación Financiera</span>
+        </div>
+        <button class="modal-close" onclick="closeTooltipModal()" style="position:static; margin:0; width:30px; height:30px; font-size:20px;">&times;</button>
+      </div>
+      <div class="app-tooltip-body" id="tooltipBody">
+        <!-- Texto explicativo dinámico -->
+      </div>
+      <div style="margin-top:16px; text-align:right;">
+        <button type="button" class="btn btn-secondary mini-btn" onclick="closeTooltipModal()">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GESTOR DE CATEGORÍAS MAESTRAS (ASANA) -->
+  <div class="modal-overlay" id="modalManageCategories" style="z-index:99999;">
+    <div class="modal-sheet" style="max-width:560px; width:92%; max-height:92vh; display:flex; flex-direction:column; padding:22px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:12px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:24px;">🏷️</span>
+          <div>
+            <h2 style="font-size:18px; font-weight:800; margin:0; color:#1D1D1F;">Gestión de Categorías Maestras</h2>
+            <p style="font-size:11.5px; color:var(--text-secondary); margin:2px 0 0 0;">Crea nuevas categorías o renombra las existentes en cascada.</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('modalManageCategories')" style="position:static; margin:0;">&times;</button>
+      </div>
+
+      <!-- Agregar Nueva Categoría -->
+      <div style="background:#FAF9FB; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:12px; margin-bottom:14px;">
+        <label class="form-label" style="font-size:12px; font-weight:700; margin-bottom:6px;">Nueva Categoría:</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="inputNewCategoryName" class="form-input" placeholder="Ej. Transporte, Música..." style="font-size:13px;" />
+          <button type="button" class="btn btn-primary" onclick="addNewCategoryAction()" style="white-space:nowrap; padding:8px 14px; font-size:12px;">
+            <span>➕</span> Agregar
+          </button>
+        </div>
+      </div>
+
+      <!-- Botón de Normalización Automática Asana (4 Pilares) -->
+      <div style="margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; background:#F2EBF9; border-radius:10px; padding:8px 12px;">
+        <span style="font-size:12px; font-weight:700; color:#4A154B;">✨ 4 Pilares Maestros Asana:</span>
+        <button type="button" class="btn btn-secondary mini-btn" onclick="triggerAsanaNormalization()" style="font-size:11px; padding:4px 10px;">
+          🔄 Normalizar Sinónimos
+        </button>
+      </div>
+
+      <!-- Lista de Categorías Existentes -->
+      <div style="flex:1; overflow-y:auto; border:1px solid rgba(0,0,0,0.08); border-radius:12px; max-height:280px; background:#FFFFFF; margin-bottom:14px;">
+        <div id="categoriesListContainer">
+          <!-- Renderizado dinámico -->
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:0;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalManageCategories')">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GLOBAL: MANUAL DE USO OFICIAL & DICCIONARIO FINANCIERO -->
+  <div class="modal-overlay" id="modalManual" style="z-index:999999;">
+    <div class="modal-sheet" style="max-width:880px; width:94%; max-height:92vh; display:flex; flex-direction:column; padding:22px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:12px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:26px;">📖</span>
+          <div>
+            <h2 style="font-size:19px; font-weight:800; margin:0; color:#1D1D1F;">Manual Oficial & Diccionario Financiero</h2>
+            <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0 0;">La Boda de Luis y Vane • Versión 4.5</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <a href="Manual_de_Uso_Boda.pdf" target="_blank" class="btn btn-primary mini-btn" style="text-decoration:none;">
+            <span>📄</span> Descargar PDF
+          </a>
+          <button class="modal-close" onclick="closeModal('modalManual')" style="position:static; margin:0;">&times;</button>
+        </div>
+      </div>
+
+      <div style="flex:1; overflow-y:auto; padding-right:6px; font-size:13px; line-height:1.6; color:#2C3E50;">
+        <div style="background:#FFF0F5; border:1px solid #F8BBD0; border-radius:12px; padding:12px 16px; margin-bottom:18px;">
+          <strong style="color:#D81B60; font-size:14px;">💍 Bienvenido al Sistema de Planificación Financiera y Logística</strong>
+          <p style="margin:4px 0 0 0; font-size:12px; color:#555;">Esta herramienta permite gestionar presupuestos multi-moneda, controlar la lista de invitados con distribución de mesas, ordenar tareas y confrontar cotizaciones con exactitud cambiaria (BCV vs Binance).</p>
+        </div>
+
+        <h3 style="font-size:16px; font-weight:800; color:#1D1D1F; margin-top:14px; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+          <span>📐</span> Diccionario de Cálculos y Fórmulas Financieras
+        </h3>
+        <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+          Consulta la definición matemática exacta y el uso de cada métrica utilizada en la aplicación web:
+        </p>
+
+        <div style="overflow-x:auto; border:1px solid rgba(0,0,0,0.08); border-radius:12px; margin-bottom:20px;">
+          <table style="width:100%; min-width:700px; border-collapse:collapse; font-size:12px;">
+            <thead>
+              <tr style="background:#F2EBF9; border-bottom:1px solid rgba(0,0,0,0.08); text-align:left;">
+                <th style="padding:10px 12px; font-weight:800; color:#2C3E50; width:22%;">Indicador / Métrica</th>
+                <th style="padding:10px 12px; font-weight:800; color:#2C3E50; width:38%;">Fórmula Matemática Exacta</th>
+                <th style="padding:10px 12px; font-weight:800; color:#2C3E50; width:40%;">Qué significa y para qué sirve</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FFF;">
+                <td style="padding:10px 12px; font-weight:700; color:#D81B60;">Costo Binance (USDT)</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1D1D1F;">
+                  • Pago BCV: <code>(Precio × Mult × Tasa_BCV) / Tasa_Binance</code><br/>
+                  • Pago Divisa: <code>Precio × Mult</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Representa el desembolso neto real que sale del bolsillo de los novios medido en dólares duros o USDT, descontando el beneficio de la brecha cambiaria oficial.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FAF9FB;">
+                <td style="padding:10px 12px; font-weight:700; color:#1D1D1F;">Dólar Nominal ($)</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1D1D1F;">
+                  • Moneda USD: <code>Precio × Mult</code><br/>
+                  • Moneda EUR: <code>(Precio × Mult × Tasa_EUR_BCV) / Tasa_USD_BCV</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Precio de lista o monto contractual exigido por el proveedor antes de cualquier ahorro o conversión por brecha cambiaria.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FFF;">
+                <td style="padding:10px 12px; font-weight:700; color:#1D1D1F;">Total en Bolívares (VES)</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1D1D1F;">
+                  • Dólar BCV: <code>USD_Nominal × Tasa_USD_BCV</code><br/>
+                  • Euro BCV: <code>EUR_Nominal × Tasa_EUR_BCV</code><br/>
+                  • Efectivo/Binance: <code>USD_Nominal × Tasa_Binance</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Cantidad exacta en Bolívares que debe ser transferida o pagada por punto de venta para saldar cada cuenta.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FAF9FB;">
+                <td style="padding:10px 12px; font-weight:700; color:#1B8738;">Ahorro Brecha BCV vs Binance</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1B8738;">
+                  <code>Math.max(0, Dólar_Nominal - Costo_Binance)</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Dólares líquidos que se ahorran al comprar bolívares a tasa de mercado y pagar a la tasa oficial protegida del BCV.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FFF;">
+                <td style="padding:10px 12px; font-weight:700; color:#1D1D1F;">Costo por Invitado</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1D1D1F;">
+                  <code>Costo_Total_Binance / Total_Invitados</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Inversión promedio por cada asistente confirmado o estimado. Permite evaluar la eficiencia del gasto y la rentabilidad de cada lista.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FAF9FB;">
+                <td style="padding:10px 12px; font-weight:700; color:#0288D1;">1 Silla Más (Costo Marginal)</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#0288D1;">
+                  <code>∑ (Costo_Unitario_Ítems_Variables)</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Costo de invitar a una persona extra. Suma exclusivamente los renglones que cobran "Por Invitado" (comida, barra, cotillón), aislando costos fijos.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FFF;">
+                <td style="padding:10px 12px; font-weight:700; color:#1D1D1F;">Arqueo de Caja</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#1D1D1F;">
+                  <code>∑ Fondos_Bs + ∑ Fondos_USDT + ∑ Fondos_Cash</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Plan de tesorería que desglosa de qué bolsillo debe salir el dinero según las formas de pago exigidas por los proveedores contratados.
+                </td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(0,0,0,0.05); background:#FAF9FB;">
+                <td style="padding:10px 12px; font-weight:700; color:#6A1B9A;">Colchón de Imprevistos (+15%)</td>
+                <td style="padding:10px 12px; font-family:monospace; font-size:11.5px; color:#6A1B9A;">
+                  <code>Costo_Total_Binance × 1.15</code>
+                </td>
+                <td style="padding:10px 12px; color:#444;">
+                  Fondo de reserva para imprevistos típicos de boda (propinas, horas extras de salón o DJ, descorches adicionales).
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:0;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modalManual')">
+          Cerrar Manual
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
   <script>
